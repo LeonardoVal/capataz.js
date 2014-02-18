@@ -26,7 +26,7 @@ basis.Future.sequence(
 			step = Math.round((RADIUS + 1) / jobCount),
 			pi = 0,
 			//TODO tag = 'radius=2^'+ RADIUS_EXP +'-1,jobCount=2^'+ jobCountExp;
-			fulltimeStat = capataz.statistics.stat(['fulltime', 'step:'+ step]);
+			fulltimeStat = capataz.statistics.stat({key:'fulltime', step: step});
 		fulltimeStat.startTime();
 		return capataz.scheduleAll(basis.Iterable.range(0, RADIUS, step).map(function (x) {
 			return {
@@ -41,7 +41,7 @@ basis.Future.sequence(
 		}).then(function (values) {
 			fulltimeStat.addTime();
 			var pi_error = Math.abs(Math.PI - pi);
-			capataz.statistics.add(['estimation_error', 'step:'+ step], pi_error);
+			capataz.statistics.add({key:'estimation_error', step:step}, pi_error);
 			capataz.logger.info('Repetition #'+ repetition +' with step '+ step +' finished. PI = ', pi, 
 				' (error ', pi_error, ').');
 		});

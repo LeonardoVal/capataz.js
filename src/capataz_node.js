@@ -89,7 +89,7 @@ exports.Capataz = basis.declare({
 				assignedSince: -Infinity
 			};
 			this.jobs[job.id] = job;
-			this.statistics.add('scheduled');
+			this.statistics.add({key: 'scheduled'});
 		}
 		return result;
 	},
@@ -105,14 +105,14 @@ exports.Capataz = basis.declare({
 	nextTask: function nextTask(amount) {
 		amount = !isNaN(amount) ? +amount | 0 :
 			Math.round(Math.max(1, Math.min(this.maxTaskSize,
-				this.desiredEvaluationTime / Math.max(1, this.statistics.average(['evaluation_time','status:resolved']))
+				this.desiredEvaluationTime / Math.max(1, this.statistics.average({key:'evaluation_time', status:'resolved'}))
 			)));
 		if (this.__pending__.length < 1) { // Add new jobs to this.__pending__.
 			this.__pending__ = Object.keys(this.jobs);
 		}
 		var ids = this.__pending__.splice(0, amount),
 			capataz = this;
-		this.statistics.add('task_size', ids.length);
+		this.statistics.add({key:'task_size'}, ids.length);
 		return { serverStartTime: this.__startTime__,
 			jobs: basis.iterable(ids).map(function (id) {
 				var job = capataz.jobs[id];
@@ -157,9 +157,10 @@ exports.Capataz = basis.declare({
 			}
 		}
 		// Gather statistics.
-		var keys = ['status:'+ status, 'platform:'+ post.clientPlatform, 'client:'+ post.postedFrom];
-		this.statistics.add(['evaluation_time'].concat(keys), post.time);
-		this.statistics.add(['roundtrip_time'].concat(keys), Date.now() - post.assignedSince);
+		this.statistics.add({key:'evaluation_time', status:status, platform:post.clientPlatform, client:post.postedFrom}, 
+			post.time);
+		this.statistics.add({key:'roundtrip_time', status:status, platform:post.clientPlatform, client:post.postedFrom}, 
+			Date.now() - post.assignedSince);
 	},
 	
 // Request handlers. ///////////////////////////////////////////////////////////
@@ -188,7 +189,7 @@ exports.Capataz = basis.declare({
 		if (task.jobs.length > 0) {
 			response.set("Cache-Control", "max-age=0,no-cache,no-store"); // Avoid cache.
 			response.json(task);
-			this.statistics.add("jobs_per_serving", task.jobs.length);
+			this.statistics.add({key:"jobs_per_serving"}, task.jobs.length);
 		} else {
 			this.logger.debug("There are no pending jobs yet.");
 			response.send(404, "There are no pending jobs yet. Please try again later.");
