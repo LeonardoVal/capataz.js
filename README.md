@@ -1,4 +1,7 @@
-# Capataz
+Capataz
+=======
+
+[![Built with Grunt](https://cdn.gruntjs.com/builtwith.png)](http://gruntjs.com/)
 
 A framework to set up distributed algorithms via HTTP, HTML and Javascript, based on [NodeJS](http://nodejs.org/) and [Express](https://github.com/visionmedia/express).
 
