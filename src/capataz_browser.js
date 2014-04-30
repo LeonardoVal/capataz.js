@@ -1,7 +1,7 @@
 /** Capataz module to run under a browser's rendering thread.
 */
-require(['basis'], function (basis) { "use strict";
-	window.basis = basis;
+require(['creatartis-base'], function (base) { "use strict";
+	window.base = base;
 	var APP = window.APP = {},
 		CONFIG = APP.CONFIG = {
 			startTime: Date.now(),
@@ -11,20 +11,20 @@ require(['basis'], function (basis) { "use strict";
 			minDelay: 100, // 100 milliseconds.
 			maxDelay: 2 * 60000, // 2 minutes.
 		},
-		LOGGER = APP.LOGGER = basis.Logger.ROOT;
+		LOGGER = APP.LOGGER = base.Logger.ROOT;
 	LOGGER.appendToHtml('log', 30);
 	LOGGER.info('Starting '+ CONFIG.workerCount +' workers.');
 
 	/** APP.Drudger():
 		A wrapper for the rendering thread's side of a web worker.
 	*/
-	APP.Drudger = basis.declare({ //////////////////////////////////////////////
+	APP.Drudger = base.declare({ //////////////////////////////////////////////
 		constructor: function Drudger() {
 			// Nothing for now.
 		},
 
 		initialize: function initialize() {
-			var ready = new basis.Future();
+			var ready = new base.Future();
 			if (typeof Worker === 'function') {
 				this.webworker = new Worker('capataz_worker.js');
 				this.webworker.onmessage = function (msg) {
@@ -48,9 +48,9 @@ require(['basis'], function (basis) { "use strict";
 	// Main workflow. //////////////////////////////////////////////////////////
 
 		getTask: function getTask() {
-			return basis.Future.retrying(function () {
+			return base.Future.retrying(function () {
 				LOGGER.info('< Requesting jobs.');
-				return basis.HttpRequest.getJSON(CONFIG.jobURI).then(function (task) {
+				return base.HttpRequest.getJSON(CONFIG.jobURI).then(function (task) {
 					if (task.serverStartTime > CONFIG.startTime) {
 						LOGGER.info('> Definitions are outdated. Reloading...');
 						window.location.reload();
@@ -69,19 +69,19 @@ require(['basis'], function (basis) { "use strict";
 		doJob: function doJob(job) {
 			var drudger = this;
 			if (this.webworker) {
-				var future = new basis.Future();
+				var future = new base.Future();
 				this.webworker.onmessage = this.onWorkerMessage.bind(this, future);
 				this.webworker.postMessage(JSON.stringify(job));
 				return future;
 			} else {
 				// If web workers are not available, execute in the rendering thread.
-				return basis.Future.invoke(eval, this, job.code);
+				return base.Future.invoke(eval, this, job.code);
 			}
 		},
 		
 		doWork: function doWork(task) {
 			var drudger = this;
-			return basis.Future.sequence(task.jobs, function (job) {
+			return base.Future.sequence(task.jobs, function (job) {
 				job.clientPlatform = navigator.platform; // Set job's client properties.
 				job.startedAt = Date.now();
 				return drudger.doJob(job).then(function (result) { // Jobs finishes well.
@@ -101,9 +101,9 @@ require(['basis'], function (basis) { "use strict";
 		},
 		
 		postResults: function postResults(task) {
-			return basis.Future.retrying(function () {
+			return base.Future.retrying(function () {
 				LOGGER.info("< Posting results.");
-				return basis.HttpRequest.postJSON(CONFIG.jobURI, task).fail(function (xhr) {
+				return base.HttpRequest.postJSON(CONFIG.jobURI, task).fail(function (xhr) {
 					LOGGER.warn('! Posting failed: ', xhr.status, ' ', xhr.statusText, ' ', xhr.responseText, '.');
 				});
 			}, CONFIG.maxRetries, CONFIG.minDelay, 2, CONFIG.maxDelay).fail(function () {
@@ -113,7 +113,7 @@ require(['basis'], function (basis) { "use strict";
 		
 		drudge: function drudge() {
 			var drudger = this;
-			return basis.Future.doWhile(function () {
+			return base.Future.doWhile(function () {
 				return drudger.getTask()
 					.then(drudger.doWork.bind(drudger))
 					.then(drudger.postResults.bind(drudger));
@@ -126,10 +126,10 @@ require(['basis'], function (basis) { "use strict";
 	}); // declare Drudger.
 	
 	APP.start = function start() {
-		APP.drudgers = basis.Iterable.range(CONFIG.workerCount).map(function () {
+		APP.drudgers = base.Iterable.range(CONFIG.workerCount).map(function () {
 			return new APP.Drudger();
 		}).toArray();
-		basis.Future.sequence(APP.drudgers, function (drudger) {
+		base.Future.sequence(APP.drudgers, function (drudger) {
 			return drudger.initialize().done(drudger.drudge.bind(drudger));
 		});
 	}; // start.
@@ -139,4 +139,4 @@ require(['basis'], function (basis) { "use strict";
 	} else {
 		window.addEventListener('load', APP.start, false);
 	}
-}); // require basis.
+}); // require base.

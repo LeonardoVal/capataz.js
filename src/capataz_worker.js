@@ -9,11 +9,11 @@ self.onmessage = function (msg) {
 };
 
 importScripts('require.js');
-require(['basis'], function (basis) {
-	self.basis = basis;
+require(['creatartis-base'], function (base) {
+	self.base = base;
 	self.onmessage = function onmessage(msg) {
 		var data = JSON.parse(msg.data);
-		basis.Future.invoke(eval, self, data.code || '').then(function (result) {
+		base.Future.invoke(eval, self, data.code || '').then(function (result) {
 			data.result = result;
 			self.postMessage(JSON.stringify(data));
 		}, function (error) { 

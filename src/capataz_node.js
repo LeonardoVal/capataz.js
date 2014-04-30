@@ -1,11 +1,11 @@
 /** Capataz definition for NodeJS when required as a module.
 */
 "use strict";
-var basis = require('./static/basis');
+var base = require('creatartis-base');
 
-exports.Capataz = basis.declare({
+exports.Capataz = base.declare({
 	constructor: function Capataz(config) {
-		basis.initialize(this, config)
+		base.initialize(this, config)
 		/** Capataz.workerCount=2:
 			.
 		*/
@@ -34,14 +34,14 @@ exports.Capataz = basis.declare({
 			Maximum amount of jobs per task.
 		*/
 			.number('maxTaskSize', { defaultValue: 50, coerce: true })
-		/** Capataz.statistics=new basis.Statistics():
+		/** Capataz.statistics=new base.Statistics():
 			Statistics about the server functioning.
 		*/
-			.object('statistics', { defaultValue: new basis.Statistics() })
-		/** Capataz.logger=basis.Logger.ROOT:
+			.object('statistics', { defaultValue: new base.Statistics() })
+		/** Capataz.logger=base.Logger.ROOT:
 			Logger for the server.
 		*/
-			.object('logger', { defaultValue: basis.Logger.ROOT })
+			.object('logger', { defaultValue: base.Logger.ROOT })
 		/** Capataz.jobs:
 			Scheduled jobs by id.
 		*/
@@ -56,7 +56,7 @@ exports.Capataz = basis.declare({
 	*/
 	wrappedJob: function wrappedJob(imports, fun, args) { 
 		return ('(function(){' // A code template is not used because of minification.
-			+'return basis.Future.imports.apply(this,'+ JSON.stringify(imports || []) +').then(function(deps){'
+			+'return base.Future.imports.apply(this,'+ JSON.stringify(imports || []) +').then(function(deps){'
 				+'return ('+ fun +').apply(this,deps.concat('+ JSON.stringify(args || []) +'));'
 			+'});'
 		+'})()');
@@ -75,7 +75,7 @@ exports.Capataz = basis.declare({
 		executed by a worker.
 	*/
 	schedule: function schedule(params) {
-		var result = new basis.Future();
+		var result = new base.Future();
 		if (this.scheduledJobsCount() >= this.maxScheduled) { 
 			result.reject(new Error("Cannot schedule more jobs: the maximum amount ("+ 
 				this.maxScheduled +") has been reached."));
@@ -114,7 +114,7 @@ exports.Capataz = basis.declare({
 			capataz = this;
 		this.statistics.add({key:'task_size'}, ids.length);
 		return { serverStartTime: this.__startTime__,
-			jobs: basis.iterable(ids).map(function (id) {
+			jobs: base.iterable(ids).map(function (id) {
 				var job = capataz.jobs[id];
 				return job && {
 					id: id,
@@ -245,10 +245,10 @@ exports.Capataz = basis.declare({
 // Utilities. //////////////////////////////////////////////////////////////////
 
 	scheduleAll: function scheduleAll(jobs, amount, callback) {
-		var jobs_iter = basis.iterable(jobs).__iter__(),
+		var jobs_iter = base.iterable(jobs).__iter__(),
 			amount = isNaN(amount) ? this.maxScheduled : Math.min(+amount | 0, this.maxScheduled),
 			capataz = this;
-		return basis.Future.doWhile(function () {
+		return base.Future.doWhile(function () {
 			var partition = [],
 				scheduled;
 			try {
@@ -258,10 +258,10 @@ exports.Capataz = basis.declare({
 					callback && callback(scheduled);
 				}
 			} catch (err) {
-				basis.Iterable.prototype.catchStop(err);
+				base.Iterable.prototype.catchStop(err);
 			}
 			// The Future.all() result is an array, so always casts to true.
-			return partition.length < 1 ? false : basis.Future.all(partition);
+			return partition.length < 1 ? false : base.Future.all(partition);
 		});
 	}	
 }); // declare Capataz.
