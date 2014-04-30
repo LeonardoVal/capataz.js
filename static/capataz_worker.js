@@ -1,2 +1,0 @@
-//! capataz 0.1.0
-"use strict";self.onmessage=function(a){var b=JSON.parse(a.data);b.error="Worker is not ready yet.",self.postMessage(JSON.stringify(b))},importScripts("require.js"),require(["basis"],function(basis){self.basis=basis,self.onmessage=function onmessage(msg){var data=JSON.parse(msg.data);basis.Future.invoke(eval,self,data.code||"").then(function(a){data.result=a,self.postMessage(JSON.stringify(data))},function(a){data.error=a+"",self.postMessage(JSON.stringidy(data))})},self.postMessage("Ready")});
