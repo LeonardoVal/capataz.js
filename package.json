@@ -30,5 +30,8 @@
 			"grunt-docker": "~0.0.8",
 			"grunt-bowercopy": "~1.0.0",
 		"creatartis-base": "git://github.com/LeonardoVal/creatartis-base.git"
+	},
+	"scripts": {
+		"postinstall": "npm dedupe"
 	}
 }
