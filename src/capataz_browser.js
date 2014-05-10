@@ -2,17 +2,29 @@
 */
 require(['creatartis-base'], function (base) { "use strict";
 	window.base = base;
-	var APP = window.APP = {},
-		CONFIG = APP.CONFIG = {
-			startTime: Date.now(),
-			jobURI: '/job',
-			workerCount: 2,
-			maxRetries: 50,
-			minDelay: 100, // 100 milliseconds.
-			maxDelay: 2 * 60000, // 2 minutes.
-		},
-		LOGGER = APP.LOGGER = base.Logger.ROOT;
-	LOGGER.appendToHtml('log', 30);
+	var APP = window.APP = {};
+	APP.__args__ = (function (args) { // Parse URL's query arguments.
+		window.location.search.substring(1).split('&').forEach(function (arg) {
+			arg = arg.split('=').map(decodeURIComponent);
+			if (arg.length == 2) {
+				args[arg[0]] = arg[1];
+			}
+		});
+		return args;
+	})({});
+	
+	var CONFIG = APP.CONFIG = {
+		startTime: Date.now(),
+		jobURI: '/job',
+		workerCount: (APP.__args__.workerCount|0) || 2,
+		maxRetries: (APP.__args__.maxRetries|0) || 50,
+		minDelay: (APP.__args__.minDelay|0) || 100, // 100 milliseconds.
+		maxDelay: (APP.__args__.maxDelay|0) || 2 * 60000, // 2 minutes.
+		logLength: (APP.__args__.logLength|0) || 30, // 30 lines.
+	};
+	
+	var LOGGER = APP.LOGGER = base.Logger.ROOT;
+	LOGGER.appendToHtml('log', CONFIG.logLength);
 	LOGGER.info('Starting '+ CONFIG.workerCount +' workers.');
 
 	/** APP.Drudger():
