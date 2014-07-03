@@ -1,4 +1,9 @@
-/** Capataz module to run under a browser's rendering thread.
+/** # Capataz client
+
+Capataz module to run in a browser. It handles AJAX calls and manages the 
+[web workers](http://www.w3schools.com/html/html5_webworkers.asp). All modules
+are handled via [RequireJS](http://requirejs.org/), that must be loaded before
+this file.
 */
 require(['creatartis-base'], function (base) { "use strict";
 	window.base = base;
@@ -15,7 +20,7 @@ require(['creatartis-base'], function (base) { "use strict";
 	
 	var CONFIG = APP.CONFIG = {
 		startTime: Date.now(),
-		jobURI: '/job',
+		jobURI: '/task.json',
 		workerCount: (APP.__args__.workerCount|0) || 2,
 		maxRetries: (APP.__args__.maxRetries|0) || 50,
 		minDelay: (APP.__args__.minDelay|0) || 100, // 100 milliseconds.
