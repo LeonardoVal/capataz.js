@@ -1,49 +1,58 @@
-/** Capataz definition for NodeJS when required as a module.
+/** # Capataz server ([Node](http://nodejs.org))
+
+This module defines the Capataz class. It represents a Capataz server which can
+schedule jobs and assign them to connecting browsers. It is based on a
+[ExpressJS](http://expressjs.com/) application.
 */
 "use strict";
 var base = require('creatartis-base');
 
 exports.Capataz = base.declare({
 	constructor: function Capataz(config) {
-		base.initialize(this, config)
-		/** Capataz.workerCount=2:
-			.
+		/** The `config` property holds configuration options. Some will be 
+		shown to the clients. The clients may override this values with URL's 
+		query arguments.
+		*/
+		base.initialize(this.config = {}, config)
+		/** + `config.workerCount=2` controls how many web workers the clients
+		spawn.
 		*/
 			.integer('workerCount', { defaultValue: 2, coerce: true })
-		/** Capataz.maxRetries=50:
-			.
+		/** + `config.maxRetries = 50` defines how many times the clients should 
+		retry failed connections to the server.
 		*/
 			.number('maxRetries', { defaultValue: 50, coerce: true })
-		/** Capataz.minDelay=100ms:
-			Minimum delay between retries.
+		/** + `config.minDelay = 100ms` sets the minimum delay between retries.
 		*/
 			.integer('minDelay', { defaultValue: 100, coerce: true })
-		/** Capataz.maxDelay=120000ms (2 minutes):
-			Maximum delay between retries.
+		/** + `config.maxDelay = 2m` sets the maximum delay between retries.
 		*/
 			.number('maxDelay', { defaultValue: 2 * 60000 , coerce: true })
-		/** Capataz.maxScheduled=5000:
-			Maximum amount of scheduled pending jobs at any given time.
-		*/
-			.number('maxScheduled', { defaultValue: 5000, coerce: true })
-		/** Capataz.desiredEvaluationTime=5000ms (5 seconds):
-			Expected time the browsers must spend on each task.
+		/** + `config.desiredEvaluationTime=5s` defines the expected time the 
+		browsers must spend on each task. The server will bundle jobs if clients
+		execute them faster than this value.
 		*/
 			.number('desiredEvaluationTime', { defaultValue: 5000, coerce: true })
-		/** Capataz.maxTaskSize=50:
-			Maximum amount of jobs per task.
+		/** + `config.maxTaskSize=50` is the maximum amount of jobs that can be
+		bundled per task.
 		*/
 			.number('maxTaskSize', { defaultValue: 50, coerce: true })
-		/** Capataz.statistics=new base.Statistics():
-			Statistics about the server functioning.
+		/** + `config.maxScheduled=5000` is the maximum amount of scheduled 
+		pending jobs at any given time. Trying to schedule more jobs will raise 
+		an exception.
+		*/
+			.number('maxScheduled', { defaultValue: 5000, coerce: true });
+		/** The rest of the constructor arguments set other server properties.
+		*/
+		base.initialize(this, config)
+		/** + `statistics=new base.Statistics()` holds the statistics about the 
+		server functioning.
 		*/
 			.object('statistics', { defaultValue: new base.Statistics() })
-		/** Capataz.logger=base.Logger.ROOT:
-			Logger for the server.
+		/** + `logger=base.Logger.ROOT` is the logger used by the server.
 		*/
 			.object('logger', { defaultValue: base.Logger.ROOT })
-		/** Capataz.jobs:
-			Scheduled jobs by id.
+		/** + `jobs={}` is a map of scheduled jobs by id.
 		*/
 			.object('jobs', { defaultValue: {}});
 		this.__pending__ = [];
@@ -51,10 +60,14 @@ exports.Capataz = base.declare({
 		this.__startTime__ = Date.now();
 	},
 	
-	/** Capataz.wrappedJob(imports, fun, args):
+	/** Jobs sent to the clients are JSON objects. Their most important data is 
+	the javascript code that must be executed by the clients. The code to be 
+	managed by the Capataz server must be a function. This is wrapped in another
+	function that handles dependencies (using 
+	[requirejs](http://requirejs.org/)) and the calls arguments.
 		.
 	*/
-	wrappedJob: function wrappedJob(imports, fun, args) { 
+	wrappedJob: function wrappedJob(imports, fun, args) {
 		return ('(function(){' // A code template is not used because of minification.
 			+'return base.Future.imports.apply(this,'+ JSON.stringify(imports || []) +').then(function(deps){'
 				+'return ('+ fun +').apply(this,deps.concat('+ JSON.stringify(args || []) +'));'
@@ -62,23 +75,24 @@ exports.Capataz = base.declare({
 		+'})()');
 	},
 	
-	/** Capataz.schedule(params):
-		Schedules a new job. The params are the following:
-		- fun: Either a function or a string with the Javascript code to 
-		execute. It must always be a function.
-		- imports: Array of dependencies to be loaded with RequireJS. These
-		will be the first arguments in the call to the function in the code.
-		- args: Further arguments to pass when the function in code is 
-		called.
-		- info: Description of the job to be displayed to the user.
-		The result is a future that will be resolved when the job is 
-		executed by a worker.
+	/** To schedule a new job the following data must be provided (in `params`):
+	
+		+ `fun`: Either a function or a string with the Javascript code of a 
+			function.
+		+ `imports`: Array of dependencies to be loaded with 
+			[requirejs](http://requirejs.org/). These will be the first 
+			arguments in the call to `fun`.
+		+ `args`: Further arguments to pass to `fun`, after the dependencies.
+		+ `info`: Description of the job to be displayed to the user. 
+		
+	The result of a call to `schedule` is a future that will be resolved when 
+	the job is executed by a worker client.
 	*/
 	schedule: function schedule(params) {
 		var result = new base.Future();
-		if (this.scheduledJobsCount() >= this.maxScheduled) { 
+		if (this.scheduledJobsCount() >= this.config.maxScheduled) { 
 			result.reject(new Error("Cannot schedule more jobs: the maximum amount ("+ 
-				this.maxScheduled +") has been reached."));
+				this.config.maxScheduled +") has been reached."));
 		} else {
 			var job = {
 				id: (this.__jobCount__ = ++this.__jobCount__ & 0xFFFFFFFF).toString(36),
@@ -98,14 +112,15 @@ exports.Capataz = base.declare({
 		return Object.keys(this.jobs).length;
 	},
 	
-	/** Capataz.nextTask():
-		Builds a new task, with jobs taken from this.jobs in sequence until 
-		there are no more jobs to perform.
+	/** The function `nextTask()` builds a new task, with jobs taken from 
+	`this.jobs` in sequence until there are no more jobs to perform. A task is a
+	bundle of jobs sent to the client to be executed.
 	*/
 	nextTask: function nextTask(amount) {
 		amount = !isNaN(amount) ? +amount | 0 :
-			Math.round(Math.max(1, Math.min(this.maxTaskSize,
-				this.desiredEvaluationTime / Math.max(1, this.statistics.average({key:'evaluation_time', status:'resolved'}))
+			Math.round(Math.max(1, Math.min(this.config.maxTaskSize,
+				this.config.desiredEvaluationTime / 
+					Math.max(1, this.statistics.average({key:'evaluation_time', status:'resolved'}))
 			)));
 		if (this.__pending__.length < 1) { // Add new jobs to this.__pending__.
 			this.__pending__ = Object.keys(this.jobs);
@@ -126,9 +141,9 @@ exports.Capataz = base.declare({
 		};
 	},
 	
-	/** Capataz.processResult(post):
-		Checks the posted result, and if it is valid, fulfils the 
-		corresponding job.
+	/** When all jobs in a task have been completed, the clients post the 
+	results back to the server. The function `processResult(post)` checks the 
+	posted result, and if it is valid, fulfils the corresponding jobs.
 	*/
 	processResult: function processResult(post) {
 		var id = post.id,
@@ -156,34 +171,36 @@ exports.Capataz = base.declare({
 				}
 			}
 		}
-		// Gather statistics.
-		this.statistics.add({key:'evaluation_time', status:status, platform:post.clientPlatform, client:post.postedFrom}, 
-			post.time);
-		this.statistics.add({key:'roundtrip_time', status:status, platform:post.clientPlatform, client:post.postedFrom}, 
+		this.statistics.add({key:'evaluation_time', status:status, // Gather statistics.
+			platform:post.clientPlatform, client:post.postedFrom}, post.time);
+		this.statistics.add({key:'roundtrip_time', status:status, 
+			platform:post.clientPlatform, client:post.postedFrom}, 
 			Date.now() - post.assignedSince);
 	},
 	
-// Request handlers. ///////////////////////////////////////////////////////////
+	// ## Request handlers. ####################################################
 	
-	/** Capataz.get_config(request, response):
-		Serves the configuration for the clients. This is a JSON object with 
-		parameters like the amount of retries and the delays between them.
+	/** The clients fetch their configuration via a `GET` to `/config.json`. 
+	This is handled by `get_config(request, response)`. The client's 
+	configuration is a JSON object with parameters like the amount of retries 
+	and the delays between them.
 	*/
 	get_config: function serveConfig(request, response) {
 		response.set("Cache-Control", "max-age=0,no-cache,no-store"); // Avoid cache.
 		response.json({
-			workerCount: this.workerCount,
-			maxRetries: this.maxRetries,
-			minDelay: this.minDelay,
-			maxDelay: this.maxDelay
+			workerCount: this.config.workerCount,
+			maxRetries: this.config.maxRetries,
+			minDelay: this.config.minDelay,
+			maxDelay: this.config.maxDelay
 		});
 	},
 	
-	/** Capataz.get_job(request, response):
-		Serves a job to a client. This is a JSON object with the code to be 
-		executed, the job's id, and other related data.
+	/** The clients fetch a new task via a `GET` to `/task.json`. This is 
+	handled by `get_task(request, response)`. A task is a JSON object with one
+	or more jobs; each including the code to be executed, the job's id, and 
+	other related data.
 	*/
-	get_job: function get_job(request, response) {
+	get_task: function get_task(request, response) {
 		var server = this,
 			task = this.nextTask();
 		if (task.jobs.length > 0) {
@@ -197,10 +214,10 @@ exports.Capataz = base.declare({
 		return true;
 	},
 	
-	/** Capataz.post_job(request, response):
-		Processes a job's result posted by a client.
+	/** The clients report a task's results via a `POST` to `/task.json`. This
+	is handled by `post_task(request, response)`.
 	*/
-	post_job: function post_job(request, response) {
+	post_task: function post_task(request, response) {
 		var capataz = this,
 			postedFrom = request.connection.remoteAddress +'';
 		if (!request.body || !Array.isArray(request.body.jobs)) {
@@ -214,55 +231,106 @@ exports.Capataz = base.declare({
 		}
 	},
 	
-	/** Capataz.get_stats(request, response):
-		Serves the current statistics of the server.
+	/** The clients can get the server's statistics via a `GET` to 
+	`/stats.json`. This is handled by `get_stats(request, response)`.
 	*/
 	get_stats: function get_stats(request, response) {
 		response.set("Cache-Control", "max-age=0,no-cache,no-store");
 		response.json(this.statistics);
 	},
 	
-// ExpressJS related. //////////////////////////////////////////////////////////
+	// ## ExpressJS. ###########################################################
 
+	/** The Capataz server relays on a [ExpressJS](http://expressjs.com/) 
+	application. The method `configureApp(args)` sets up the server, including
+	serving static files, JSON parsing, compression and (of course) the method
+	handlers.
+	
+	The `args` may include:
+	*/
 	configureApp: function configureApp(args) {
-		var express = require('express'),
+		args = base.copy({}, args, {
+			staticPath: __dirname +'/static',
+			taskPath: '/task.json',
+			statsPath: '/stats.json',
+			configPath: '/config.json'
+		});
+		var express = args.express || require('express'),
 			app = args.app || express();
-		app.use(express.compress());
-		app.use(express.bodyParser());
+		/** + `disableCompression = false`: compression is enabled by default.
+		*/
+		if (!args.disableCompression) {
+			app.use(express.compress());
+		}
+		/** + `staticPath = __dirname/static`: folder path from which to serve
+		the static files (js, html, etc) required by the clients. If it is
+		present but falsy, no static handler is defined.
+		*/
 		if (args.staticPath) {
 			app.use(express.static(args.staticPath));
 		}
-		app.get(args.jobPath || '/job', this.get_job.bind(this));
-		app.post(args.jobPath || '/job', this.post_job.bind(this));
-		app.get(args.statsPath || '/stats', this.get_stats.bind(this));
-		app.get(args.configPath || '/config', this.get_config.bind(this));
+		app.use(express.json()); // Enable JSON parsing.
+		/** + `taskPath = /task.json`: path for getting tasks and posting 
+		results.
+		*/
+		app.get(args.taskPath, this.get_task.bind(this));
+		app.post(args.taskPath, this.post_task.bind(this));
+		/** + `configPath = /config.json`: path for getting the clients' 
+		configuration.
+		*/
+		app.get(args.configPath, this.get_config.bind(this));
+		/** + `statsPath = /stats.json`: path for getting the server's 
+		statistics.
+		*/
+		app.get(args.statsPath, this.get_stats.bind(this));
+		/** + `authentication`: a function with signature 
+		`function (url, username, password)` to use for basic authentication.
+		*/
+		if (typeof args.authentication === 'function') {
+			app.use(args.taskPath, express.basicAuth(args.authentication.bind(this, args.taskPath)));
+			app.use(args.configPath, express.basicAuth(args.authentication.bind(this, args.configPath)));
+			app.use(args.statsPath, express.basicAuth(args.authentication.bind(this, args.statsPath)));
+			app.use(express.basicAuth(args.authentication.bind(this, '')));
+		}
+		/** + `logFile`: file to write the server's log.
+		*/
 		if (args.logFile) {
 			this.logger.appendToFile(args.logFile);
 		}
 		return app;
 	},
 	
-// Utilities. //////////////////////////////////////////////////////////////////
+	// ## Utilities. ###########################################################
 
+	/** Many times the amount of jobs is too big for the server to schedule all
+	at once. The function `scheduleAll()` takes an job generator (`jobs`). It 
+	will take an `amount` of jobs from the generator and schedule them, and wait
+	for them to finish before proceeding to the next jobs. In this way all jobs
+	can be handled without throttling the server. The `callback` is called for
+	every job actually scheduled with the resulting `Future`.
+	*/
 	scheduleAll: function scheduleAll(jobs, amount, callback) {
 		var jobs_iter = base.iterable(jobs).__iter__(),
-			amount = isNaN(amount) ? this.maxScheduled : Math.min(+amount | 0, this.maxScheduled),
+			amount = isNaN(amount) ? this.config.maxScheduled : 
+				Math.min(+amount | 0, this.config.maxScheduled),
 			capataz = this;
 		return base.Future.doWhile(function () {
 			var partition = [],
 				scheduled;
 			try {
-				for (var i = 0; i < amount; i++) {
+				for (var i = 0; i < amount; ++i) {
 					scheduled = capataz.schedule(jobs_iter());
 					partition.push(scheduled);
-					callback && callback(scheduled);
+					if (callback) {
+						callback(scheduled);
+					}
 				}
 			} catch (err) {
 				base.Iterable.prototype.catchStop(err);
 			}
-			// The Future.all() result is an array, so always casts to true.
+			
 			return partition.length < 1 ? false : base.Future.all(partition);
-		});
+		} /* Future.all() result is an array, hence always truthy. */ );
 	}	
 }); // declare Capataz.
 
