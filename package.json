@@ -32,6 +32,7 @@
 		"creatartis-base": "git://github.com/LeonardoVal/creatartis-base.git"
 	},
 	"scripts": {
-		"postinstall": "npm dedupe"
+		"postinstall": "npm dedupe",
+		"test": "grunt & node tests/pi_estimation.js"
 	}
 }
