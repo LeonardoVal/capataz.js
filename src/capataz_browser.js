@@ -7,30 +7,9 @@ this file.
 */
 require(['creatartis-base'], function (base) { "use strict";
 	window.base = base;
-	var APP = window.APP = {};
-	APP.__args__ = (function (args) { // Parse URL's query arguments.
-		window.location.search.substring(1).split('&').forEach(function (arg) {
-			arg = arg.split('=').map(decodeURIComponent);
-			if (arg.length == 2) {
-				args[arg[0]] = arg[1];
-			}
-		});
-		return args;
-	})({});
-	
-	var CONFIG = APP.CONFIG = {
-		startTime: Date.now(),
-		jobURI: '/task.json',
-		workerCount: (APP.__args__.workerCount|0) || 2,
-		maxRetries: (APP.__args__.maxRetries|0) || 50,
-		minDelay: (APP.__args__.minDelay|0) || 100, // 100 milliseconds.
-		maxDelay: (APP.__args__.maxDelay|0) || 2 * 60000, // 2 minutes.
-		logLength: (APP.__args__.logLength|0) || 30, // 30 lines.
-	};
-	
-	var LOGGER = APP.LOGGER = base.Logger.ROOT;
-	LOGGER.appendToHtml('log', CONFIG.logLength);
-	LOGGER.info('Starting '+ CONFIG.workerCount +' workers.');
+	var APP = window.APP = {}, 
+		LOGGER = APP.LOGGER = base.Logger.ROOT,
+		CONFIG;
 
 	/** APP.Drudger():
 		A wrapper for the rendering thread's side of a web worker.
@@ -143,13 +122,37 @@ require(['creatartis-base'], function (base) { "use strict";
 	}); // declare Drudger.
 	
 	APP.start = function start() {
-		APP.drudgers = base.Iterable.range(CONFIG.workerCount).map(function () {
-			return new APP.Drudger();
-		}).toArray();
-		base.Future.sequence(APP.drudgers, function (drudger) {
-			return drudger.initialize().done(drudger.drudge.bind(drudger));
+		var args = {}; // Parse URL's query arguments.
+		window.location.search.substring(1).split('&').forEach(function (arg) {
+			arg = arg.split('=').map(decodeURIComponent);
+			if (arg.length == 2) {
+				args[arg[0]] = arg[1];
+			}
 		});
-	}; // start.
+		return base.HttpRequest.getJSON(args.configURI || '/config.json').then(function (configJSON) {
+			CONFIG = APP.CONFIG = base.copy(args, configJSON, { // Default configuration.
+				jobURI: '/task.json',
+				configURI: '/config.json',
+				workerCount: 2,
+				maxRetries: 50,
+				minDelay: 100, // 100 milliseconds.
+				maxDelay: 2 * 60000, // 2 minutes.
+				logLength: 30, // 30 lines.
+			});
+			// Timestamp is used to compare with the server's.
+			CONFIG.startTime = Date.now(); 
+			// Setup logger.
+			LOGGER.appendToHtml('log', CONFIG.logLength);
+			LOGGER.info('Starting '+ CONFIG.workerCount +' workers.');
+			// Start drudgers.
+			APP.drudgers = base.Iterable.range(CONFIG.workerCount).map(function () {
+				return new APP.Drudger();
+			}).toArray();
+			return base.Future.sequence(APP.drudgers, function (drudger) {
+				return drudger.initialize().done(drudger.drudge.bind(drudger));
+			});
+		});
+	}; // APP.start().
 	
 	if (document.readyState === 'complete') {
 		APP.start();
