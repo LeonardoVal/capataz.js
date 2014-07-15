@@ -28,11 +28,11 @@ exports.Capataz = base.declare({
 		/** + `config.maxDelay = 2m` sets the maximum delay between retries.
 		*/
 			.number('maxDelay', { defaultValue: 2 * 60000 , coerce: true })
-		/** + `config.desiredEvaluationTime=5s` defines the expected time the 
+		/** + `config.desiredEvaluationTime=10s` defines the expected time the 
 		browsers must spend on each task. The server will bundle jobs if clients
 		execute them faster than this value.
 		*/
-			.number('desiredEvaluationTime', { defaultValue: 5000, coerce: true })
+			.number('desiredEvaluationTime', { defaultValue: 10000, coerce: true })
 		/** + `config.maxTaskSize=50` is the maximum amount of jobs that can be
 		bundled per task.
 		*/
