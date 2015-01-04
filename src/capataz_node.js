@@ -1,25 +1,23 @@
 /** # Capataz server ([Node](http://nodejs.org))
 
-This module defines the Capataz class. It represents a Capataz server which can
-schedule jobs and assign them to connecting browsers. It is based on a
-[ExpressJS](http://expressjs.com/) application.
+This module defines the Capataz class. It represents a Capataz server which can schedule jobs and 
+assign them to connecting browsers. It is based on a [ExpressJS](http://expressjs.com/) application.
 */
 "use strict";
-var base = require('creatartis-base');
+var base = require('creatartis-base'),
+	path = require('path');
 
 exports.Capataz = base.declare({
 	constructor: function Capataz(config) {
-		/** The `config` property holds configuration options. Some will be 
-		shown to the clients. The clients may override this values with URL's 
-		query arguments.
+		/** The `config` property holds configuration options. Some will be shown to the clients. 
+		The clients may override this values with URL's query arguments.
 		*/
 		base.initialize(this.config = {}, config)
-		/** + `config.workerCount=2` controls how many web workers the clients
-		spawn.
+		/** + `config.workerCount=2` controls how many web workers the clients spawn.
 		*/
 			.integer('workerCount', { defaultValue: 2, coerce: true })
-		/** + `config.maxRetries = 50` defines how many times the clients should 
-		retry failed connections to the server.
+		/** + `config.maxRetries = 50` defines how many times the clients should retry failed 
+		connections to the server.
 		*/
 			.number('maxRetries', { defaultValue: 50, coerce: true })
 		/** + `config.minDelay = 100ms` sets the minimum delay between retries.
@@ -28,25 +26,25 @@ exports.Capataz = base.declare({
 		/** + `config.maxDelay = 2m` sets the maximum delay between retries.
 		*/
 			.number('maxDelay', { defaultValue: 2 * 60000 , coerce: true })
-		/** + `config.desiredEvaluationTime=10s` defines the expected time the 
-		browsers must spend on each task. The server will bundle jobs if clients
-		execute them faster than this value.
+		/** + `config.desiredEvaluationTime=10s` defines the expected time the browsers must spend 
+		on each task. The server will bundle jobs if clients execute them faster than this value.
 		*/
 			.number('desiredEvaluationTime', { defaultValue: 10000, coerce: true })
-		/** + `config.maxTaskSize=50` is the maximum amount of jobs that can be
-		bundled per task.
+		/** + `config.maxTaskSize=50` is the maximum amount of jobs that can be bundled per task.
 		*/
 			.number('maxTaskSize', { defaultValue: 50, coerce: true })
-		/** + `config.maxScheduled=5000` is the maximum amount of scheduled 
-		pending jobs at any given time. Trying to schedule more jobs will raise 
-		an exception.
+		/** + `config.evaluationTimeGainFactor=0.9` is the gain factor used to adjust the evaluation
+		time average.		
+		*/
+			.number('evaluationTimeGainFactor', { defaultValue: 0.9, coerce: true })
+		/** + `config.maxScheduled=5000` is the maximum amount of scheduled pending jobs at any 
+		given time. Trying to schedule more jobs will raise an exception.
 		*/
 			.number('maxScheduled', { defaultValue: 5000, coerce: true });
 		/** The rest of the constructor arguments set other server properties.
 		*/
 		base.initialize(this, config)
-		/** + `statistics=new base.Statistics()` holds the statistics about the 
-		server functioning.
+		/** + `statistics=new base.Statistics()` holds the statistics about the server functioning.
 		*/
 			.object('statistics', { defaultValue: new base.Statistics() })
 		/** + `logger=base.Logger.ROOT` is the logger used by the server.
@@ -60,12 +58,10 @@ exports.Capataz = base.declare({
 		this.__startTime__ = Date.now();
 	},
 	
-	/** Jobs sent to the clients are JSON objects. Their most important data is 
-	the javascript code that must be executed by the clients. The code to be 
-	managed by the Capataz server must be a function. This is wrapped in another
-	function that handles dependencies (using 
-	[requirejs](http://requirejs.org/)) and the calls arguments.
-		.
+	/** Jobs sent to the clients are JSON objects. Their most important data is the javascript code 
+	that must be executed by the clients. The code to be managed by the Capataz server must be a 
+	function. This is wrapped in another function that handles dependencies (using 
+	[requirejs](http://requirejs.org/)) and the call's arguments.
 	*/
 	wrappedJob: function wrappedJob(imports, fun, args) {
 		return ('(function(){' // A code template is not used because of minification.
@@ -77,16 +73,14 @@ exports.Capataz = base.declare({
 	
 	/** To schedule a new job the following data must be provided (in `params`):
 	
-		+ `fun`: Either a function or a string with the Javascript code of a 
-			function.
-		+ `imports`: Array of dependencies to be loaded with 
-			[requirejs](http://requirejs.org/). These will be the first 
-			arguments in the call to `fun`.
+		+ `fun`: Either a function or a string with the Javascript code of a function.
+		+ `imports`: Array of dependencies to be loaded with [requirejs](http://requirejs.org/).
+			These will be the first arguments in the call to `fun`.
 		+ `args`: Further arguments to pass to `fun`, after the dependencies.
 		+ `info`: Description of the job to be displayed to the user. 
 		
-	The result of a call to `schedule` is a future that will be resolved when 
-	the job is executed by a worker client.
+	The result of a call to `schedule` is a future that will be resolved when the job is executed by
+	a worker client.
 	*/
 	schedule: function schedule(params) {
 		var result = new base.Future();
@@ -102,8 +96,11 @@ exports.Capataz = base.declare({
 				scheduledSince: Date.now(),
 				assignedSince: -Infinity
 			};
+			if (params.tags) {
+				job.tags = params.tags;
+			}
 			this.jobs[job.id] = job;
-			this.statistics.add({key: 'scheduled'});
+			this.statistics.add(base.copy({key: 'scheduled'}, params.tags));
 		}
 		return result;
 	},
@@ -112,22 +109,25 @@ exports.Capataz = base.declare({
 		return Object.keys(this.jobs).length;
 	},
 	
-	/** The function `nextTask()` builds a new task, with jobs taken from 
-	`this.jobs` in sequence until there are no more jobs to perform. A task is a
-	bundle of jobs sent to the client to be executed.
+	
+	taskSize: function taskSize() {
+		var estimatedJobTime = Math.max(1, this.statistics.average({key:'estimated_time'}));
+		return Math.round(Math.max(1, Math.min(this.config.maxTaskSize,
+			this.config.desiredEvaluationTime / estimatedJobTime
+		)));
+	},
+	
+	/** The function `nextTask()` builds a new task, with jobs taken from `this.jobs` in sequence 
+	until there are no more jobs to perform. A task is a bundle of jobs sent to the client to be 
+	executed.
 	*/
 	nextTask: function nextTask(amount) {
-		amount = !isNaN(amount) ? +amount | 0 :
-			Math.round(Math.max(1, Math.min(this.config.maxTaskSize,
-				this.config.desiredEvaluationTime / 
-					Math.max(1, this.statistics.average({key:'evaluation_time', status:'resolved'}))
-			)));
+		amount = isNaN(amount) ? this.taskSize() : +amount | 0;
 		if (this.__pending__.length < 1) { // Add new jobs to this.__pending__.
 			this.__pending__ = Object.keys(this.jobs);
 		}
 		var ids = this.__pending__.splice(0, amount),
 			capataz = this;
-		this.statistics.add({key:'task_size'}, ids.length);
 		return { serverStartTime: this.__startTime__,
 			jobs: base.iterable(ids).map(function (id) {
 				var job = capataz.jobs[id];
@@ -141,9 +141,21 @@ exports.Capataz = base.declare({
 		};
 	},
 	
-	/** When all jobs in a task have been completed, the clients post the 
-	results back to the server. The function `processResult(post)` checks the 
-	posted result, and if it is valid, fulfils the corresponding jobs.
+	/** A post isn't valid when: it has no `assignedSince` timestamp, it was assigned before the 
+	server came online (it is outdated) or in the future, or it has a weird evaluation time (zero or
+	less).
+	*/
+	postIsInvalid: function postIsInvalid(post) {
+		return isNaN(post.assignedSince) // Result has no assignedSince timestamp.
+			|| post.assignedSince < this.__startTime__ // Result is outdated.
+			|| post.assignedSince > Date.now() // Result was assigned in the future!
+			|| post.time <= 0 // Result evaluation time is zero or negative!
+		;
+	},
+	
+	/** When all jobs in a task have been completed, the clients post the results back to the 
+	server. The function `processResult(post)` checks the posted result, and if it is valid, fulfils 
+	the corresponding jobs.
 	*/
 	processResult: function processResult(post) {
 		var id = post.id,
@@ -153,11 +165,7 @@ exports.Capataz = base.declare({
 			this.logger.debug("Job ", post.id, " not found. Ignoring POST.");
 			status = 'ignored';
 		} else {
-			if (isNaN(post.assignedSince) // Result has no assignedSince timestamp.
-				|| post.assignedSince < this.__startTime__ // Result is outdated.
-				|| post.assignedSince > Date.now() // Result was assigned in the future!
-				|| post.time <= 0 // Result evaluation time is zero or negative!
-				) {
+			if (this.postIsInvalid(post)) {
 				this.logger.warn("Posted result for ", id, " is not valid. Ignoring POST.");
 				this.jobs[id] = job; // Put the job back.
 				status = 'invalid';
@@ -171,19 +179,29 @@ exports.Capataz = base.declare({
 				}
 			}
 		}
-		this.statistics.add({key:'evaluation_time', status:status, // Gather statistics.
-			platform:post.clientPlatform, client:post.postedFrom}, post.time);
-		this.statistics.add({key:'roundtrip_time', status:status, 
-			platform:post.clientPlatform, client:post.postedFrom}, 
-			Date.now() - post.assignedSince);
+		this.accountPost(post, job, status);
 	},
 	
-	// ## Request handlers. ####################################################
+	/** Gathers statistics about completed jobs. Some are used in the server's own operation.
+	*/
+	accountPost: function accountPost(post, job, status) {
+		if (status == 'resolved') {
+			this.statistics.gain({key: 'estimated_time'}, post.time, 
+				this.config.evaluationTimeGainFactor);
+		}
+		this.statistics.add(base.copy({key: 'evaluation_time', status: status,
+			platform: post.clientPlatform, client: post.postedFrom,
+		}, job && job.tags), post.time);
+		this.statistics.add(base.copy({key: 'roundtrip_time', status: status, 
+			platform: post.clientPlatform, client: post.postedFrom
+		}, job && job.tags), Date.now() - post.assignedSince);
+	},
 	
-	/** The clients fetch their configuration via a `GET` to `/config.json`. 
-	This is handled by `get_config(request, response)`. The client's 
-	configuration is a JSON object with parameters like the amount of retries 
-	and the delays between them.
+	// ## Request handlers. ########################################################################
+	
+	/** The clients fetch their configuration via a `GET` to `/config.json`. This is handled by 
+	`get_config(request, response)`. The client's configuration is a JSON object with parameters 
+	like the amount of retries and the delays between them.
 	*/
 	get_config: function serveConfig(request, response) {
 		response.set("Cache-Control", "max-age=0,no-cache,no-store"); // Avoid cache.
@@ -195,10 +213,9 @@ exports.Capataz = base.declare({
 		});
 	},
 	
-	/** The clients fetch a new task via a `GET` to `/task.json`. This is 
-	handled by `get_task(request, response)`. A task is a JSON object with one
-	or more jobs; each including the code to be executed, the job's id, and 
-	other related data.
+	/** The clients fetch a new task via a `GET` to `/task.json`. This is handled by 
+	`get_task(request, response)`. A task is a JSON object with one or more jobs; each including the 
+	code to be executed, the job's id, and other related data.
 	*/
 	get_task: function get_task(request, response) {
 		var server = this,
@@ -206,7 +223,7 @@ exports.Capataz = base.declare({
 		if (task.jobs.length > 0) {
 			response.set("Cache-Control", "max-age=0,no-cache,no-store"); // Avoid cache.
 			response.json(task);
-			this.statistics.add({key:"jobs_per_serving"}, task.jobs.length);
+			this.statistics.add({key:"jobs_per_task"}, task.jobs.length);
 		} else {
 			this.logger.debug("There are no pending jobs yet.");
 			response.send(404, "There are no pending jobs yet. Please try again later.");
@@ -214,8 +231,8 @@ exports.Capataz = base.declare({
 		return true;
 	},
 	
-	/** The clients report a task's results via a `POST` to `/task.json`. This
-	is handled by `post_task(request, response)`.
+	/** The clients report a task's results via a `POST` to `/task.json`. This is handled by 
+	`post_task(request, response)`.
 	*/
 	post_task: function post_task(request, response) {
 		var capataz = this,
@@ -231,26 +248,25 @@ exports.Capataz = base.declare({
 		}
 	},
 	
-	/** The clients can get the server's statistics via a `GET` to 
-	`/stats.json`. This is handled by `get_stats(request, response)`.
+	/** The clients can get the server's statistics via a `GET` to `/stats.json`. This is handled by
+	`get_stats(request, response)`.
 	*/
 	get_stats: function get_stats(request, response) {
 		response.set("Cache-Control", "max-age=0,no-cache,no-store");
 		response.json(this.statistics);
 	},
 	
-	// ## ExpressJS. ###########################################################
+	// ## ExpressJS. ###############################################################################
 
-	/** The Capataz server relays on a [ExpressJS](http://expressjs.com/) 
-	application. The method `configureApp(args)` sets up the server, including
-	serving static files, JSON parsing, compression and (of course) the method
-	handlers.
+	/** The Capataz server relays on a [ExpressJS](http://expressjs.com/) application. The method 
+	`configureApp(args)` sets up the server, including serving static files, JSON parsing, 
+	compression and (of course) the method handlers.
 	
 	The `args` may include:
 	*/
 	configureApp: function configureApp(args) {
 		args = base.copy({}, args, {
-			staticPath: __dirname +'/static',
+			staticPath: path.dirname(module.filename) +'/static',
 			taskPath: '/task.json',
 			statsPath: '/stats.json',
 			configPath: '/config.json'
@@ -262,29 +278,25 @@ exports.Capataz = base.declare({
 		if (!args.disableCompression) {
 			app.use(express.compress());
 		}
-		/** + `staticPath = __dirname/static`: folder path from which to serve
-		the static files (js, html, etc) required by the clients. If it is
-		present but falsy, no static handler is defined.
+		/** + `staticPath = <module_path>/static`: folder path from which to serve the static files 
+		(js, html, etc) required by the clients. If it is present but falsy, no static handler is defined.
 		*/
 		if (args.staticPath) {
 			app.use(express.static(args.staticPath));
 		}
 		app.use(express.json()); // Enable JSON parsing.
-		/** + `taskPath = /task.json`: path for getting tasks and posting 
-		results.
+		/** + `taskPath = /task.json`: path for getting tasks and posting results.
 		*/
 		app.get(args.taskPath, this.get_task.bind(this));
 		app.post(args.taskPath, this.post_task.bind(this));
-		/** + `configPath = /config.json`: path for getting the clients' 
-		configuration.
+		/** + `configPath = /config.json`: path for getting the clients' configuration.
 		*/
 		app.get(args.configPath, this.get_config.bind(this));
-		/** + `statsPath = /stats.json`: path for getting the server's 
-		statistics.
+		/** + `statsPath = /stats.json`: path for getting the server's statistics.
 		*/
 		app.get(args.statsPath, this.get_stats.bind(this));
-		/** + `authentication`: a function with signature 
-		`function (url, username, password)` to use for basic authentication.
+		/** + `authentication`: a function with signature `function (url, username, password)` to 
+			use for basic authentication.
 		*/
 		if (typeof args.authentication === 'function') {
 			app.use(args.taskPath, express.basicAuth(args.authentication.bind(this, args.taskPath)));
@@ -300,13 +312,12 @@ exports.Capataz = base.declare({
 		return app;
 	},
 	
-	// ## Utilities. ###########################################################
+	// ## Utilities. ###############################################################################
 
-	/** Many times the amount of jobs is too big for the server to schedule all
-	at once. The function `scheduleAll()` takes an job generator (`jobs`). It 
-	will take an `amount` of jobs from the generator and schedule them, and wait
-	for them to finish before proceeding to the next jobs. In this way all jobs
-	can be handled without throttling the server. The `callback` is called for
+	/** Many times the amount of jobs is too big for the server to schedule all at once. The 
+	function `scheduleAll()` takes an job generator (`jobs`). It will take an `amount` of jobs from 
+	the generator and schedule them, and wait for them to finish before proceeding to the next jobs.
+	In this way all jobs can be handled without throttling the server. The `callback` is called for
 	every job actually scheduled with the resulting `Future`.
 	*/
 	scheduleAll: function scheduleAll(jobs, amount, callback) {
@@ -320,10 +331,7 @@ exports.Capataz = base.declare({
 			try {
 				for (var i = 0; i < amount; ++i) {
 					scheduled = capataz.schedule(jobs_iter());
-					partition.push(scheduled);
-					if (callback) {
-						callback(scheduled);
-					}
+					partition.push(callback ? callback(scheduled) : scheduled);
 				}
 			} catch (err) {
 				base.Iterable.prototype.catchStop(err);
