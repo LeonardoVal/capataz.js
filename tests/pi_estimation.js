@@ -1,4 +1,4 @@
-/** # Pi estimation
+﻿/** # Pi estimation
 
 This is a test of the Capataz server, making a distributed (very) brute force 
 estimation of Pi.
@@ -7,12 +7,11 @@ estimation of Pi.
 /** Import dependencies ...
 */
 var fs = require('fs'),
-	base = require('creatartis-base'),
 	capataz_node = require('../build/capataz_node'),
+	base = capataz_node.dependencies.base,
 /** ... and define this run's parameters.
 */
 	CONFIG = {
-		port: 80,
 		radius: Math.pow(2, 32) - 1,
 		repetitions: 40,
 		jobCounts: base.Iterable.range(17).map(function (e) { 
@@ -20,11 +19,13 @@ var fs = require('fs'),
 		}).toArray(),
 		taskSizes: [1, 10, 20, 30, 50, 100]
 	},
-/** Create the server instance.
+/** Configure and start the server instance.
 */
-	capataz = new capataz_node.Capataz({
+	capataz = capataz_node.Capataz.run({
 		workerCount: 2,
-		desiredEvaluationTime: 5000
+		desiredEvaluationTime: 5000,
+		port: 80,
+		logFile: base.Text.formatDate(null, '"./tests/logs/capataz-log-"yyyymmdd-hhnnss".txt"'),
 	});
 
 /** The jobs are based on this function.
@@ -118,20 +119,3 @@ been completed. Here the server is shut down.
 	capataz.logger.info('Run statistics:\n'+ capataz.statistics);
 	process.exit();
 });
-
-/** Server configuration includes setting up the logger properly, printing to 
-a file with a time stamp and the console (standard output).
-*/
-capataz.logger.appendToConsole();
-capataz.configureApp({
-	logFile: './tests/logs/capataz-log-'
-		+ base.Text.formatDate(new Date(capataz.__startTime__), 'yyyymmdd-hhnnss') +'.txt',
-/** The method `configureApp` creates and returns an [ExpressJS](http://expressjs.com/)
-application. It is started by calling `listen`.
-*/
-}).listen(CONFIG.port);
-
-/** Finally a message is included in the log to indicate that the server started
-properly.
-*/
-capataz.logger.info('Server started and listening at port ', CONFIG.port, '.');
