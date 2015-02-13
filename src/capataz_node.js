@@ -1,58 +1,110 @@
-/** # Capataz server ([Node](http://nodejs.org))
+﻿/** # Capataz server ([Node](http://nodejs.org))
 
 This module defines the Capataz class. It represents a Capataz server which can schedule jobs and 
 assign them to connecting browsers. It is based on a [ExpressJS](http://expressjs.com/) application.
 */
 "use strict";
 var base = require('creatartis-base'),
+	express = require('express'),
 	path = require('path');
 
-exports.Capataz = base.declare({
+/** Dependencies are exported so they may be used by user code.
+*/
+exports.dependencies = { base: base, express: express };
+	
+var Capataz = exports.Capataz = base.declare({
 	constructor: function Capataz(config) {
-		/** The `config` property holds configuration options. Some will be shown to the clients. 
-		The clients may override this values with URL's query arguments.
+		/** The `config` property holds configuration options. Some will be shown to the clients, 
+		which may override them with URL's query arguments.
+		
+		The parameters that deal with the workload distribution are: 
 		*/
 		base.initialize(this.config = {}, config)
-		/** + `config.workerCount=2` controls how many web workers the clients spawn.
+		/** + `workerCount = 2` controls how many web workers the clients spawn.
 		*/
 			.integer('workerCount', { defaultValue: 2, coerce: true })
-		/** + `config.maxRetries = 50` defines how many times the clients should retry failed 
+		/** + `maxRetries = 50` defines how many times the clients should retry failed 
 		connections to the server.
 		*/
 			.number('maxRetries', { defaultValue: 50, coerce: true })
-		/** + `config.minDelay = 100ms` sets the minimum delay between retries.
+		/** + `minDelay = 100ms` sets the minimum delay between retries.
 		*/
 			.integer('minDelay', { defaultValue: 100, coerce: true })
-		/** + `config.maxDelay = 2m` sets the maximum delay between retries.
+		/** + `maxDelay = 2m` sets the maximum delay between retries.
 		*/
 			.number('maxDelay', { defaultValue: 2 * 60000 , coerce: true })
-		/** + `config.desiredEvaluationTime=10s` defines the expected time the browsers must spend 
+		/** + `useWebworkers = 1` constraints the use of webworkers. If possitive (by default), all
+		jobs must be run by webworkers. If negative, all jobs must be run by the rendering thread.
+		Else, jobs can be run either way.
+		*/
+			.integer('useWebworkers' , { defaultValue: 1, coerce: true })
+		/** + `desiredEvaluationTime = 10s` defines the expected time the browsers must spend 
 		on each task. The server will bundle jobs if clients execute them faster than this value.
 		*/
 			.number('desiredEvaluationTime', { defaultValue: 10000, coerce: true })
-		/** + `config.maxTaskSize=50` is the maximum amount of jobs that can be bundled per task.
+		/** + `maxTaskSize = 50` is the maximum amount of jobs that can be bundled per task.
 		*/
 			.number('maxTaskSize', { defaultValue: 50, coerce: true })
-		/** + `config.evaluationTimeGainFactor=0.9` is the gain factor used to adjust the evaluation
-		time average.		
+		/** + `evaluationTimeGainFactor = 90%` is the gain factor used to adjust the 
+		evaluation time average.		
 		*/
 			.number('evaluationTimeGainFactor', { defaultValue: 0.9, coerce: true })
-		/** + `config.maxScheduled=5000` is the maximum amount of scheduled pending jobs at any 
+		/** + `maxScheduled = 5000` is the maximum amount of scheduled pending jobs at any 
 		given time. Trying to schedule more jobs will raise an exception.
 		*/
-			.number('maxScheduled', { defaultValue: 5000, coerce: true });
-		/** The rest of the constructor arguments set other server properties.
+			.number('maxScheduled', { defaultValue: 5000, coerce: true })
+		/** The parameters that deal with the [ExpressJS](http://expressjs.com/) server are:
+		
+			+ `port = 8080` is the port the server will listen to.
+		*/
+			.integer('port', { defaultValue: 8080, coerce: true })
+		/** + `staticRoute = /capataz` is the URL from where static files are served.
+		*/
+			.string('staticRoute', { defaultValue: '/capataz' })
+		/** + `staticFilesPath = <module_path>/static` is the path from where static files to be 
+		served are taken.
+		*/	
+			.string('staticFilesPath', { defaultValue: path.dirname(module.filename) +'/static' })
+		/** + `taskRoute = /capataz/task.json` is the URL from where to get and post tasks.
+		*/
+			.string('taskRoute', { defaultValue: '/capataz/task.json' })
+		/** + `configRoute = /capataz/config.json` is the URL from where to get the configuration.
+		*/
+			.string('configRoute', { defaultValue: '/capataz/config.json' })
+		/** + `statsRoute = /capataz/stats.json` is the URL from where to get the server's statistic 
+		summary.
+		*/
+			.string('statsRoute', { defaultValue: '/capataz/stats.json' })
+		/** + `authentication`: a function with signature `function (url, username, password)` to 
+			use for basic authentication.
+		*/
+			.func('authentication', { ignore: true })
+		/** + `compression = true`: use GZIP compression or not.
+		*/
+			.bool('compression', { defaultValue: true, coerce: true })
+		/** + `logFile = ./capataz-YYYYMMDD-HHNNSS.log`: file to write the server's log.
+		*/
+			.string('logFile', { defaultValue: base.Text.formatDate(new Date(), '"capataz-"yyyymmdd-hhnnss".log"') })
+		;
+		/** The rest of the constructor arguments set other server properties:
 		*/
 		base.initialize(this, config)
-		/** + `statistics=new base.Statistics()` holds the statistics about the server functioning.
+		/** + `statistics = new base.Statistics()` holds the statistics about the server functioning.
 		*/
 			.object('statistics', { defaultValue: new base.Statistics() })
-		/** + `logger=base.Logger.ROOT` is the logger used by the server.
+		/** + `logger = base.Logger.ROOT` is the logger used by the server.
 		*/
 			.object('logger', { defaultValue: base.Logger.ROOT })
-		/** + `jobs={}` is a map of scheduled jobs by id.
+		/** + `jobs = {}` is a map of scheduled jobs by id.
 		*/
-			.object('jobs', { defaultValue: {}});
+			.object('jobs', { defaultValue: {}})
+		;
+		if (this.logger) {
+			this.logger.appendToConsole();
+			if (this.config.logFile) {
+				this.logger.appendToFile(this.config.logFile);
+			}
+		}
 		this.__pending__ = [];
 		this.__jobCount__ = 0;
 		this.__startTime__ = Date.now();
@@ -206,10 +258,12 @@ exports.Capataz = base.declare({
 	get_config: function serveConfig(request, response) {
 		response.set("Cache-Control", "max-age=0,no-cache,no-store"); // Avoid cache.
 		response.json({
+			jobURI: this.config.taskRoute,
 			workerCount: this.config.workerCount,
 			maxRetries: this.config.maxRetries,
 			minDelay: this.config.minDelay,
-			maxDelay: this.config.maxDelay
+			maxDelay: this.config.maxDelay,
+			useWebworkers: this.config.useWebworkers
 		});
 	},
 	
@@ -259,63 +313,50 @@ exports.Capataz = base.declare({
 	// ## ExpressJS. ###############################################################################
 
 	/** The Capataz server relays on a [ExpressJS](http://expressjs.com/) application. The method 
-	`configureApp(args)` sets up the server, including serving static files, JSON parsing, 
-	compression and (of course) the method handlers.
-	
-	The `args` may include:
+	`configureApp(app)` configures the given ExpressJS app, or a new one if none is provided. 
+	Configuration includes setting up the routes (including static files), JSON parsing, compression 
+	and (of course) the method handlers.
 	*/
-	configureApp: function configureApp(args) {
-		args = base.copy({}, args, {
-			staticPath: path.dirname(module.filename) +'/static',
-			taskPath: '/task.json',
-			statsPath: '/stats.json',
-			configPath: '/config.json'
-		});
-		var express = args.express || require('express'),
-			app = args.app || express();
-		/** + `disableCompression = false`: compression is enabled by default.
-		*/
-		if (!args.disableCompression) {
+	configureApp: function configureApp(app) {
+		app = app || express();
+		var config = this.config;
+		app.use(express.json()); // Enable JSON parsing.
+		if (config.compression) {
 			app.use(express.compress());
 		}
-		/** + `staticPath = <module_path>/static`: folder path from which to serve the static files 
-		(js, html, etc) required by the clients. If it is present but falsy, no static handler is defined.
-		*/
-		if (args.staticPath) {
-			app.use(express.static(args.staticPath));
-		}
-		app.use(express.json()); // Enable JSON parsing.
-		/** + `taskPath = /task.json`: path for getting tasks and posting results.
-		*/
-		app.get(args.taskPath, this.get_task.bind(this));
-		app.post(args.taskPath, this.post_task.bind(this));
-		/** + `configPath = /config.json`: path for getting the clients' configuration.
-		*/
-		app.get(args.configPath, this.get_config.bind(this));
-		/** + `statsPath = /stats.json`: path for getting the server's statistics.
-		*/
-		app.get(args.statsPath, this.get_stats.bind(this));
-		/** + `authentication`: a function with signature `function (url, username, password)` to 
-			use for basic authentication.
-		*/
-		if (typeof args.authentication === 'function') {
-			app.use(args.taskPath, express.basicAuth(args.authentication.bind(this, args.taskPath)));
-			app.use(args.configPath, express.basicAuth(args.authentication.bind(this, args.configPath)));
-			app.use(args.statsPath, express.basicAuth(args.authentication.bind(this, args.statsPath)));
-			app.use(express.basicAuth(args.authentication.bind(this, '')));
-		}
-		/** + `logFile`: file to write the server's log.
-		*/
-		if (args.logFile) {
-			this.logger.appendToFile(args.logFile);
+		app.get('/', function(req, res) { // Redirect the root to <staticRoute/index.html>.
+			res.redirect(config.staticRoute +'/index.html');
+		});
+		app.use(config.staticRoute, express.static(config.staticFilesPath));
+		app.get(config.taskRoute, this.get_task.bind(this));
+		app.post(config.taskRoute, this.post_task.bind(this));
+		app.get(config.configRoute, this.get_config.bind(this));
+		app.get(config.statsRoute, this.get_stats.bind(this));
+		if (typeof config.authentication === 'function') {
+			[config.staticRoute, config.taskRoute, config.configRoute, config.statsRoute].forEach(function (route) {
+				app.use(route, express.basicAuth(config.authentication.bind(this, route)));
+			});
 		}
 		return app;
+	},
+	
+	/** `Capataz.run` is a shortcut to quickly configure and start a Capataz server. The `config`
+	argument may include an ExpressJS `app` to use.
+	*/
+	'static run': function run(config) {
+		var capataz = new Capataz(config),
+			port = capataz.config.port;
+		capataz.logger.info('Setting up the Capataz server.');
+		capataz.expressApp = capataz.configureApp(config.app);
+		capataz.expressApp.listen(port);
+		capataz.logger.info('Server started and listening at port ', port, '.');
+		return capataz;
 	},
 	
 	// ## Utilities. ###############################################################################
 
 	/** Many times the amount of jobs is too big for the server to schedule all at once. The 
-	function `scheduleAll()` takes an job generator (`jobs`). It will take an `amount` of jobs from 
+	function `scheduleAll()` takes a job generator (`jobs`). It will take an `amount` of jobs from 
 	the generator and schedule them, and wait for them to finish before proceeding to the next jobs.
 	In this way all jobs can be handled without throttling the server. The `callback` is called for
 	every job actually scheduled with the resulting `Future`.
@@ -339,7 +380,7 @@ exports.Capataz = base.declare({
 			
 			return partition.length < 1 ? false : base.Future.all(partition);
 		} /* Future.all() result is an array, hence always truthy. */ );
-	}	
+	}
 }); // declare Capataz.
 
 //TODO if (require.main === module) { ...
