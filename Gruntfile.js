@@ -1,4 +1,4 @@
-/** Gruntfile for [capataz]().
+﻿/** Gruntfile for [capataz]().
 */
 module.exports = function(grunt) {
 // Init config. ////////////////////////////////////////////////////////////////

@@ -1,4 +1,4 @@
-Capataz
+﻿Capataz
 =======
 
 [![Built with Grunt](https://cdn.gruntjs.com/builtwith.png)](http://gruntjs.com/)
@@ -20,4 +20,4 @@ There is also a dependency with another library of mine: [creatartis-base](http:
 This software is being continually developed. Suggestions and comments are always welcome via [email](mailto:leonardo.val@creatartis.com).
 
 Contributors:
-* [Gonzalo Mart�nez](gonzalo.martinez@live.com).
+* [Gonzalo Martínez](gonzalo.martinez@live.com).

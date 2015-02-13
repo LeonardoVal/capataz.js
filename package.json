@@ -1,4 +1,4 @@
-{
+﻿{
 	"name": "capataz",
 	"description": "A framework to set up distributed algorithm via HTTP and Javascript.",
 	"keywords": [ "distributed computing", "distributed algorithm" ],
@@ -9,7 +9,7 @@
 	},
 	"homepage": "http://creatartis.com",
 	"contributors": [
-		{ "name": "Gonzalo Mart�nez", "email": "gonzalo.martinez@live.com" }
+		{ "name": "Gonzalo Martínez", "email": "gonzalo.martinez@live.com" }
 	],
 	"licence": "MIT",
 	"repository": {

@@ -1,4 +1,4 @@
-/** # Capataz [web worker](http://www.w3schools.com/html/html5_webworkers.asp)
+﻿/** # Capataz [web worker](http://www.w3schools.com/html/html5_webworkers.asp)
 
 This module defines the web worker part of a Capataz client. This is the actual
 worker that executes the jobs' code in the client machine. 
