@@ -35,7 +35,7 @@ module.exports = function(grunt) {
 		},
 		docker: { //////////////////////////////////////////////////////////////
 			build: {
-				src: ["src/**/*.js", "tests/**/*.js", "README.md"],
+				src: ["src/**/*.js", "tests/**/*.js", "README.md", "docs/tutorial.md"],
 				dest: "docs/docker",
 				options: {
 					colourScheme: 'borland',
