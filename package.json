@@ -23,6 +23,7 @@
 	},
 	"devDependencies": {
 		"requirejs": "~2.1.9",
+		"source-map-support": "~0.2.6",
 		"grunt": "~0.4.4",
 			"grunt-contrib-copy": "~0.5.0",
 			"grunt-contrib-clean": "~0.5.0",
