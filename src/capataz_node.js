@@ -61,10 +61,14 @@ var Capataz = exports.Capataz = base.declare({
 		/** + `staticRoute = /capataz` is the URL from where static files are served.
 		*/
 			.string('staticRoute', { defaultValue: '/capataz' })
-		/** + `staticFilesPath = <module_path>/static` is the path from where static files to be 
-		served are taken.
+		/** + `serverFiles = <module_path>/static` is the path from where the static files of 
+		Capataz will be served.
 		*/	
-			.string('staticFilesPath', { defaultValue: path.dirname(module.filename) +'/static' })
+			.string('serverFiles', { defaultValue: path.dirname(module.filename) +'/static' })
+		/** + `customFiles = ''` is the path (or paths, separated by `'\n'`) from where custom 
+		static files will be served.
+		*/	
+			.string('customFiles', { defaultValue: '' })
 		/** + `taskRoute = /capataz/task.json` is the URL from where to get and post tasks.
 		*/
 			.string('taskRoute', { defaultValue: '/capataz/task.json' })
@@ -318,8 +322,8 @@ var Capataz = exports.Capataz = base.declare({
 	and (of course) the method handlers.
 	*/
 	configureApp: function configureApp(app) {
-		app = app || express();
 		var config = this.config;
+		app = app || express();
 		app.use(express.json()); // Enable JSON parsing.
 		if (config.compression) {
 			app.use(express.compress());
@@ -327,8 +331,7 @@ var Capataz = exports.Capataz = base.declare({
 		app.get('/', function(req, res) { // Redirect the root to <staticRoute/index.html>.
 			res.redirect(config.staticRoute +'/index.html');
 		});
-		app.use(config.staticRoute, express.static(config.staticFilesPath));
-		app.get(config.taskRoute, this.get_task.bind(this));
+		app.get(config.taskRoute, this.get_task.bind(this)); // REST API.
 		app.post(config.taskRoute, this.post_task.bind(this));
 		app.get(config.configRoute, this.get_config.bind(this));
 		app.get(config.statsRoute, this.get_stats.bind(this));
@@ -337,6 +340,13 @@ var Capataz = exports.Capataz = base.declare({
 				app.use(route, express.basicAuth(config.authentication.bind(this, route)));
 			});
 		}
+		app.use(config.staticRoute, express.static(config.serverFiles)); // Static files.
+		config.customFiles.split('\n').forEach(function (path) {
+			path = path.trim();
+			if (path) {
+				app.use(config.staticRoute, express.static(path));
+			}
+		});
 		return app;
 	},
 	
