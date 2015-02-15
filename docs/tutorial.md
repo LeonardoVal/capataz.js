@@ -140,7 +140,7 @@ field will be shown to the user in the browser's log, and its optional.
 Last (but not least) jobs have to be scheduled in the server. Jobs may be scheduled one by one (by
 calling the server's `schedule` method), but then most (of all) jobs will be stored into memory at 
 once. In order to avoid this we will use the server's `scheduleAll` method. Besides the `jobs` 
-generator we defined previously, it takes a number and a callback functions. The number is the 
+generator we defined previously, it takes a number and a callback function. The number is the 
 maximum amount of jobs that may be pending (and hence in memory) at any given moment. 
 
 The callback function is called when a job gets scheduled to be performed and pending. The 
@@ -211,4 +211,124 @@ the system more robust.
 
 ## Second example
 
-Coming soon...
+Probably the logic the one may want to distribute is going to be far more complicated than the one 
+of the first example. It is true that still all can be put into one function definition, but it will
+cause two big problems. First, job functions are serialized and transmitted to the clients every 
+time. Bulky functions will require an excessive bandwidth. Second, job definitions are stored in 
+memory in the server. Big functions will require also an excessive amount of memory. Neither of 
+these is an inexpensive commodity, specially in cloud hosting.
+
+One solution is to put code in separate RequireJS modules, to be served as static files and loaded
+by the clients. Browsers may cache this files, reducing the network use. Functions in job 
+definitions can be very brief, referencing to this modules for the rest of the logic.
+
+### Client module
+
+Starting with the folder `capataz_project` of our first example, we will create a subfolder called
+`modules`. There we will place the file `job_module` with the following content:
+
+```javascript
+define([], function () {
+	var exports = {};
+	
+	exports.jobFunction = function jobFunction(partition, numbers) {
+		var bits = partition.toString(2),
+			list0 = [], 
+			list1 = [],
+			sum = 0, number;
+		while (bits.length < numbers.length) { // Left pad the bits.
+			bits = '0'+ bits;
+		}
+		for (var i = 0; i < numbers.length; ++i) {
+			number = numbers[i];
+			if (bits.charAt(i) === '0') {
+				list0.push(number);
+				sum += number;
+			} else { // bits.charAt(i) === '1'
+				list1.push(number);
+				sum -= number;
+			}
+		}
+		return { 
+			partition: partition, 
+			list0: list0, 
+			list1: list1, 
+			diff: sum 
+		};
+	}
+	
+	return exports;
+});
+```
+
+This is the file that the clients will be loading separately. It is a standard RequireJS module 
+definition, using the `define` function. The function in the second argument can be seen as the 
+_constructor_ of the module. As it is recommended, the result of this function is an object 
+(`exports`). In this case, it only has the `jobFunction` from the previous example.
+
+### Updated main script
+
+The new `main.js` script starts as it did before, except for one detail. The `customFiles` parameter
+is added, pointing to the `modules` folder where the `job_module`. Capataz will serve all files in
+said folder that do not clash with his routes.
+
+```javascript
+"use strict";
+require('source-map-support').install();
+
+var capataz = require('capataz'),
+	base = capataz.dependencies.base,
+	server = capataz.Capataz.run({
+		port: 80,
+		customFiles: './modules'
+	});
+```
+
+The set of numbers could have been added to the module as well, but then it would be harder to 
+experiment with different lists of numbers.
+
+```javascript
+var NUMBERS = [61, 83, 88, 94, 121, 281, 371, 486, 554, 734, 771, 854, 885, 1003];
+```
+
+The `jobs` generator has two major changes. First the former `jobFunction` definition is missing, 
+since it has been moved to the RequireJS module. Clients are told to load this module by adding its 
+name (or path) in the `imports` field. Imported modules will be passed as arguments to the job 
+function, before the ones in `args`. Thats why the new `jobFunction` has an extra argument `m`, for 
+the module.
+
+```javascript
+var partitionCount = Math.pow(2, NUMBERS.length - 1) - 1,
+	jobFunction = 'function(m,p,ns){return m.jobFunction(p,ns);}',
+	jobs = base.Iterable.range(partitionCount).map(function (partition) {
+		return {
+			info: 'Partition #'+ partition,
+			imports: ['partition_problem_module'],
+			fun: jobFunction,
+			args: [partition, NUMBERS]
+		}
+	});
+```
+
+Jobs are scheduled in the same way as before. Yet more of them can be scheduled at once, since the 
+new job definition is shorter than the one of the first example, and hence occupies less memory.
+
+```javascript
+server.logger.info("Numbers are ", JSON.stringify(NUMBERS));
+server.scheduleAll(jobs, 2000, function (scheduled) {
+	return scheduled.then(function (result) {
+		if (result.diff == 0) {
+			server.logger.info("Partition found (#"+ result.partition +"): ",
+				JSON.stringify(result.list0), " and ", JSON.stringify(result.list1));
+			return true;
+		} else {
+			return false;
+		}
+	});
+}).then(function () {
+	server.logger.info("Finished. Stopping server.");
+	process.exit();
+});
+```
+
+by [Leonardo Val](http://github.com/LeonardoVal).
