@@ -27,8 +27,7 @@ will look like this:
 	"name": "capataz_example",
 	"dependencies": {
 		"source-map-support": "~0.2.6",
-		"creatartis-base": "git://github.com/LeonardoVal/creatartis-base.git",
-		"capataz": "git://github.com/LeonardoVal/capataz.js.git"
+		"capataz": "~0.1.2"
 	}
 }
 ```
