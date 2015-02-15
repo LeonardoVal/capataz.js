@@ -1,0 +1,8 @@
+﻿bower_components/
+docs/docker/
+lib/
+node_modules/
+src/
+static/
+tests/
+Gruntfile.js
