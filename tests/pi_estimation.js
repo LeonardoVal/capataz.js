@@ -25,7 +25,7 @@ var fs = require('fs'),
 		workerCount: 2,
 		desiredEvaluationTime: 5000,
 		port: 80,
-		logFile: base.Text.formatDate(null, '"./tests/logs/capataz-log-"yyyymmdd-hhnnss".txt"'),
+		logFile: base.Text.formatDate(null, '"./tests/logs/pi_estimation-log-"yyyymmdd-hhnnss".txt"'),
 	});
 
 /** The jobs are based on this function.
