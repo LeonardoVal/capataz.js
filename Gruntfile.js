@@ -15,6 +15,15 @@ module.exports = function(grunt) {
 				]
 			}
 		},
+		jshint: { //////////////////////////////////////////////////////////////
+			build: {
+				options: { // Check <http://jshint.com/docs/options/>.
+					loopfunc: true,
+					boss: true
+				},
+				src: ['src/capataz_*.js'],
+			},
+		},
 		uglify: { //////////////////////////////////////////////////////////////
 		  options: {
 			banner: '//! <%= pkg.name %> <%= pkg.version %>\n',
@@ -66,8 +75,11 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.loadNpmTasks('grunt-docker');
 	grunt.loadNpmTasks('grunt-bowercopy');
+	grunt.loadNpmTasks('grunt-contrib-jshint');
+
 // Register tasks. /////////////////////////////////////////////////////////////
-	grunt.registerTask('build', ['clean', 'copy', 'uglify', 'docker']);
+	grunt.registerTask('compile', ['clean:build', 'copy', 'jshint:build', 'uglify']);
+	grunt.registerTask('build', ['compile', 'docker']);
 	grunt.registerTask('default', ['build']);
 	grunt.registerTask('lib', ['bowercopy']);
 };

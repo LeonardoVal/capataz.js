@@ -34,7 +34,8 @@
 			"grunt-contrib-clean": "~0.5.0",
 			"grunt-contrib-uglify": "~0.2.7",
 			"grunt-docker": "~0.0.8",
-			"grunt-bowercopy": "~1.0.0"
+			"grunt-bowercopy": "~1.0.0",
+			"grunt-contrib-jshint": "~0.10.0"
 	},
 	"scripts": {
 		"test": "grunt & node tests/pi_estimation.js"
