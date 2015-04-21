@@ -9,7 +9,6 @@ connect via standard web browsers. Since every end-user device with an internet 
 certainly has one or more web browsers, Capataz can mount a distributed algorithm on a lot of 
 different platforms.
 
-
 ## First example
 
 This example requires Node.js properly installed. The `node` and `npm` programs should be accessible 
@@ -148,8 +147,7 @@ The callback function is called when a job gets scheduled to be performed and pe
 Simply put, they are objects that represent a computation or process that will finished at an 
 indeterminate moment. We have to provide a callback to be called when that happens. This is done
 with the `then` method. In this case when the results are available the sum difference is checked. 
-If it is zero we know a partition has been found, and the solution is logged. 
-
+If it is zero we know a partition has been found, and the solution is logged.
 
 ```javascript
 server.logger.info("Numbers are ", JSON.stringify(NUMBERS));

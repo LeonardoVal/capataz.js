@@ -2,7 +2,7 @@
 	"name": "capataz",
 	"description": "A framework to set up distributed algorithm via HTTP and Javascript.",
 	"keywords": [ "distributed computing", "distributed algorithm" ],
-	"version": "0.1.2-alpha",
+	"version": "0.1.2",
 	"author": {
 		"name": "Leonardo Val",
 		"email": "leonardo.val@creatartis.com"
@@ -16,7 +16,7 @@
 		"type": "git",
 		"url": "http://github.com/LeonardoVal/capataz.js"
 	},
-	"main": "build/capataz_node.js",
+	"main": "build/capataz_node.min.js",
 	"files": [ 
 		"build",
 		"LICENSE.md",
@@ -30,6 +30,7 @@
 		"requirejs": "~2.1.9",
 		"source-map-support": "~0.2.6",
 		"grunt": "~0.4.4",
+			"grunt-concat-sourcemap": "~0.4.0",
 			"grunt-contrib-copy": "~0.5.0",
 			"grunt-contrib-clean": "~0.5.0",
 			"grunt-contrib-uglify": "~0.2.7",

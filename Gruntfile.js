@@ -15,13 +15,23 @@ module.exports = function(grunt) {
 				]
 			}
 		},
+		concat_sourcemap: { ////////////////////////////////////////////////////
+			capataz_node: {
+				src: ['__prologue__', 'server', 'stores', '__epilogue__'
+					].map(function (path) { return 'src/capataz_node/'+ path +'.js'; }),
+				dest: 'build/capataz_node.js',
+				options: {
+					separator: '\n\n'
+				}
+			},
+		},
 		jshint: { //////////////////////////////////////////////////////////////
 			build: {
 				options: { // Check <http://jshint.com/docs/options/>.
 					loopfunc: true,
 					boss: true
 				},
-				src: ['src/capataz_*.js'],
+				src: ['src/capataz_*.js', 'build/capataz_node.js'],
 			},
 		},
 		uglify: { //////////////////////////////////////////////////////////////
@@ -30,8 +40,8 @@ module.exports = function(grunt) {
 			report: 'min'
 		  },
 		  capataz_node: {
-			src: './src/capataz_node.js',
-			dest: './build/capataz_node.js'
+			src: './build/capataz_node.js',
+			dest: './build/capataz_node.min.js'
 		  },
 		  capataz_browser: {
 			src: './src/capataz_browser.js',
@@ -48,7 +58,8 @@ module.exports = function(grunt) {
 				dest: "docs/docker",
 				options: {
 					colourScheme: 'borland',
-					ignoreHidden: true
+					ignoreHidden: true,
+					exclude: 'src/**/__*__.js'
 				}
 			}
 		},
@@ -70,6 +81,7 @@ module.exports = function(grunt) {
 	});
 
 // Load tasks. /////////////////////////////////////////////////////////////////
+	grunt.loadNpmTasks('grunt-concat-sourcemap');
 	grunt.loadNpmTasks('grunt-contrib-clean');
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
@@ -78,7 +90,8 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-jshint');
 
 // Register tasks. /////////////////////////////////////////////////////////////
-	grunt.registerTask('compile', ['clean:build', 'copy', 'jshint:build', 'uglify']);
+	grunt.registerTask('compile', ['clean:build', 'copy', 'concat_sourcemap:capataz_node', 
+		'jshint:build', 'uglify']);
 	grunt.registerTask('build', ['compile', 'docker']);
 	grunt.registerTask('default', ['build']);
 	grunt.registerTask('lib', ['bowercopy']);
