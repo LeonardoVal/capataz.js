@@ -7,8 +7,8 @@ estimation of Pi.
 /** Import dependencies ...
 */
 var fs = require('fs'),
-	capataz_node = require('../build/capataz_node'),
-	base = capataz_node.dependencies.base,
+	capataz_node = require('../build/capataz_node.min'),
+	base = capataz_node.__dependencies__.base,
 /** ... and define this run's parameters.
 */
 	CONFIG = {

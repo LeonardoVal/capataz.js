@@ -11,10 +11,10 @@ without any. In this case we will make the server listen the standard HTTP port 
 it would listen in in the port 8080.
 */
 var capataz = require('../build/capataz_node'),
-	base = capataz.dependencies.base,
+	base = capataz.__dependencies__.base,
 	server = capataz.Capataz.run({
 		port: 80,
-		logFile: base.Text.formatDate(null, '"./tests/logs/partition_problem-log-"yyyymmdd-hhnnss".txt"')
+		logFile: base.Text.formatDate(null, '"./tests/logs/partition_problem1-log-"yyyymmdd-hhnnss".txt"')
 	});
 
 /** The partition problem (see [1](http://en.wikipedia.org/wiki/Partition_problem) and 
