@@ -41,7 +41,7 @@ and writing:
 
 ```
 > require('capataz');
-{ dependencies: { ... }, Capataz: { [Function] ... }}
+{ __dependencies__: { ... }, Capataz: { [Function] ... }}
 ```
 
 ### Main script
@@ -64,7 +64,7 @@ listen in in the port 8080.
 
 ```javascript
 var capataz = require('capataz'),
-	base = capataz.dependencies.base,
+	base = capataz.__dependencies__.base,
 	server = capataz.Capataz.run({
 		port: 80
 	});
@@ -274,7 +274,7 @@ said folder that do not clash with his routes.
 require('source-map-support').install();
 
 var capataz = require('capataz'),
-	base = capataz.dependencies.base,
+	base = capataz.__dependencies__.base,
 	server = capataz.Capataz.run({
 		port: 80,
 		customFiles: './modules'
