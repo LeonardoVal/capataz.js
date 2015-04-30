@@ -2,6 +2,7 @@
 =======
 
 [![Built with Grunt](https://cdn.gruntjs.com/builtwith.png)](http://gruntjs.com/)
+[![NPM](https://nodei.co/npm/capataz.png)](https://www.npmjs.com/package/capataz)
 
 A framework to set up distributed algorithms via HTTP, HTML and Javascript, based on [NodeJS](http://nodejs.org/) and [Express](https://github.com/visionmedia/express).
 
