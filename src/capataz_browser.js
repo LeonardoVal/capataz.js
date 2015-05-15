@@ -32,13 +32,13 @@ require(['creatartis-base'], function (base) { "use strict";
 		initialize: function initialize(useWebworkers) {
 			useWebworkers = useWebworkers|0;
 			var ready = new base.Future();
-			if (useWebworkers >= 0 && typeof Worker === 'function') {
+			if (useWebworkers >= 0 && typeof Worker !== 'undefined') {
 				this.webworker = new Worker('capataz_worker.js');
 				this.webworker.onmessage = function (msg) {
 					ready.resolve(msg.data || true);
 				};
 			} else if (useWebworkers > 0) {
-				ready.fail("Webworkers are required but are not supported in this browser!");
+				ready.reject("Webworkers are required but are not supported in this browser!");
 			} else {
 				ready.resolve(false);
 			}
