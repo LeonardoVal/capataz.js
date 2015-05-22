@@ -27,7 +27,13 @@ worker that executes the jobs' code in the client machine.
 		*/
 		self.onmessage = function onmessage(msg) {
 			var data = JSON.parse(msg.data);
-			base.Future.invoke(eval, self, data.code || '').then(function (result) {
+			base.Future.invoke(eval, self, 
+				('(function () {'+ // Job wrapper.
+					'return base.Future.imports.apply(this, '+ JSON.stringify(data.imports || []) +').then(function (deps) {'+
+						'return ('+ data.fun +').apply(this, deps.concat('+ JSON.stringify(data.args || []) +'));'+
+					'});'+
+				'})()')
+			).then(function (result) {
 				data.result = result;
 				self.postMessage(JSON.stringify(data));
 			}, function (error) { 

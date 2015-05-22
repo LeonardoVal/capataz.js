@@ -45,16 +45,16 @@ var Capataz = exports.Capataz = declare({
 		/** + `workerCount = 2` controls how many web workers the clients spawn.
 		*/
 			.integer('workerCount', { defaultValue: 2, coerce: true })
-		/** + `maxRetries = 50` defines how many times the clients should retry failed 
+		/** + `maxRetries = 100` defines how many times the clients should retry failed 
 		connections to the server.
 		*/
-			.number('maxRetries', { defaultValue: 50, coerce: true })
+			.number('maxRetries', { defaultValue: 100, coerce: true })
 		/** + `minDelay = 100ms` sets the minimum delay between retries.
 		*/
 			.integer('minDelay', { defaultValue: 100, coerce: true })
-		/** + `maxDelay = 2m` sets the maximum delay between retries.
+		/** + `maxDelay = 15m` sets the maximum delay between retries.
 		*/
-			.number('maxDelay', { defaultValue: 2 * 60000 , coerce: true })
+			.number('maxDelay', { defaultValue: 15 * 60000 , coerce: true })
 		/** + `useWebworkers = 1` constraints the use of webworkers. If possitive (by default), all
 		jobs must be run by webworkers. If negative, all jobs must be run by the rendering thread.
 		Else, jobs can be run either way.
@@ -127,19 +127,6 @@ var Capataz = exports.Capataz = declare({
 		this.__startTime__ = Date.now();
 	},
 	
-	/** Jobs sent to the clients are JSON objects. Their most important data is the javascript code 
-	that must be executed by the clients. The code to be managed by the Capataz server must be a 
-	function. This is wrapped in another function that handles dependencies (using 
-	[requirejs](http://requirejs.org/)) and the call's arguments.
-	*/
-	wrappedJob: function wrappedJob(imports, fun, args) {
-		return ('(function(){'+ // A code template is not used because of minification.
-			'return base.Future.imports.apply(this,'+ JSON.stringify(imports || []) +').then(function(deps){'+
-				'return ('+ fun +').apply(this,deps.concat('+ JSON.stringify(args || []) +'));'+
-			'});'+
-		'})()');
-	},
-	
 	/** To schedule a new job the following data must be provided (in `params`):
 	
 		+ `fun`: Either a function or a string with the Javascript code of a function.
@@ -152,9 +139,14 @@ var Capataz = exports.Capataz = declare({
 	a worker client.
 	*/
 	schedule: function schedule(params) {
+		if (!params.fun) {
+			raise("Cannot schedule ", JSON.stringify(params), ", it has no `fun`!");
+		}
 		return this.store.store({
-			info: ''+ params.info,
-			code: this.wrappedJob(params.imports, params.fun, params.args),
+			info: params.info,
+			imports: params.imports,
+			args: params.args,
+			fun: params.fun,
 			tags: params.tags
 		}).future;
 	},
@@ -183,8 +175,10 @@ var Capataz = exports.Capataz = declare({
 			jobs: this.store.task(amount).map(function (job) {
 				return {
 					id: job.id,
-					info: job.info,
-					code: job.code,
+					info: (job.info || '') +'',
+					imports: job.imports || [],
+					args: job.args || [],
+					fun: job.fun +'',
 					assignedSince: Date.now()
 				};
 			})
