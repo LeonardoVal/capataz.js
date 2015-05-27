@@ -39,6 +39,8 @@
 			"grunt-contrib-jshint": "~0.10.0"
 	},
 	"scripts": {
-		"test": "grunt & node tests/pi_estimation.js"
+		"partition_problem1": "grunt & node tests/partition_problem1.js",
+		"partition_problem2": "grunt & node tests/partition_problem2.js",
+		"pi_estimation": "grunt & node tests/pi_estimation.js"
 	}
 }
