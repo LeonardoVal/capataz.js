@@ -578,7 +578,7 @@ var MemoryStore = exports.MemoryStore = declare(Store, {
 	onJobReject: function (job, reason) {
 		if (this.__assigned__.hasOwnProperty(job.id)) {
 			delete this.__assigned__[job.id];
-			Store.prototype.onJobReject.call(this, job, value);
+			Store.prototype.onJobReject.call(this, job, reason);
 			if (this.keepRejected) {
 				this.__rejected__[job.id] = job;
 			}
@@ -696,7 +696,7 @@ var FileStore = exports.FileStore = declare(Store, {
 			var future = this.__assigned__[id];
 			delete this.__assigned__[id];
 			var job = this.readJob(id, future);
-			Store.prototype.onJobReject.call(this, job, value);
+			Store.prototype.onJobReject.call(this, job, reason);
 			this.writeJob(job);
 		}
 	}
