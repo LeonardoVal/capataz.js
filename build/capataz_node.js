@@ -704,5 +704,4 @@ var FileStore = exports.FileStore = declare(Store, {
 
 })(exports);
 //TODO if (require.main === module) { ...
-
 //# sourceMappingURL=capataz_node.js.map

@@ -1,31 +1,46 @@
 ﻿/** Gruntfile for [capataz]().
 */
+var path = require('path');
+
 module.exports = function(grunt) {
-// Init config. ////////////////////////////////////////////////////////////////
+	var SOURCE_FILES = ['__prologue__', 
+			'server', 'stores', 
+		'__epilogue__'].map(function (path) {
+			return 'src/capataz_node/'+ path +'.js';
+		});
+// Init config. ////////////////////////////////////////////////////////////////////////////////////
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
-		clean: { ///////////////////////////////////////////////////////////////
+		clean: { ///////////////////////////////////////////////////////////////////////////////////
 			build: ["build"]
 		},
-		copy: { ////////////////////////////////////////////////////////////////
-			main: {
-				files: [
-					{ expand: true, cwd: 'static/', src: ['**'], dest: 'build/static/' },
-					{ expand: true, cwd: 'lib/', src: ['**'], dest: 'build/static/' },
+		concat: { //////////////////////////////////////////////////////////////////////////////////
+			options: {
+				separator: '\n\n',
+				sourceMap: true
+			},
+			build: {
+				src: SOURCE_FILES,
+				dest: 'build/capataz_node.js'
+			},
+		},
+		copy: { ////////////////////////////////////////////////////////////////////////////////////
+			build: {
+				files: [{ src: 'static/**', dest: 'build/', expand: true },
+					{ src: 'node_modules/requirejs/require.js', 
+						dest: 'build/static/require.js', nonull: true },
+					{ src: 'node_modules/sermat/build/sermat-amd-min.js', 
+						dest: 'build/static/sermat.js', nonull: true },
+					{ src: 'node_modules/sermat/build/sermat-amd-min.js.map',
+						dest: 'build/static/sermat.js.map', nonull: true },
+					{ src: 'node_modules/creatartis-base/build/creatartis-base.min.js',
+						dest: 'build/static/creatartis-base.js', nonull: true },
+					{ src: 'node_modules/creatartis-base/build/creatartis-base.min.js.map',
+						dest: 'build/static/creatartis-base.js.map', nonull: true }
 				]
 			}
 		},
-		concat_sourcemap: { ////////////////////////////////////////////////////
-			capataz_node: {
-				src: ['__prologue__', 'server', 'stores', '__epilogue__'
-					].map(function (path) { return 'src/capataz_node/'+ path +'.js'; }),
-				dest: 'build/capataz_node.js',
-				options: {
-					separator: '\n\n'
-				}
-			},
-		},
-		jshint: { //////////////////////////////////////////////////////////////
+		jshint: { //////////////////////////////////////////////////////////////////////////////////
 			build: {
 				options: { // Check <http://jshint.com/docs/options/>.
 					loopfunc: true,
@@ -34,25 +49,25 @@ module.exports = function(grunt) {
 				src: ['src/capataz_*.js', 'build/capataz_node.js'],
 			},
 		},
-		uglify: { //////////////////////////////////////////////////////////////
-		  options: {
-			banner: '//! <%= pkg.name %> <%= pkg.version %>\n',
-			report: 'min'
-		  },
-		  capataz_node: {
-			src: './build/capataz_node.js',
-			dest: './build/capataz_node.min.js'
-		  },
-		  capataz_browser: {
-			src: './src/capataz_browser.js',
-			dest: './build/static/capataz_browser.js'
-		  },
-		  capataz_worker: {
-			src: './src/capataz_worker.js',
-			dest: './build/static/capataz_worker.js'
-		  }
+		uglify: { //////////////////////////////////////////////////////////////////////////////////
+			options: {
+				banner: '//! <%= pkg.name %> <%= pkg.version %>\n',
+				report: 'min'
+			},
+			capataz_node: {
+				src: './build/capataz_node.js',
+				dest: './build/capataz_node.min.js'
+			},
+			capataz_browser: {
+				src: './src/capataz_browser.js',
+				dest: './build/static/capataz_browser.js'
+			},
+			capataz_worker: {
+				src: './src/capataz_worker.js',
+				dest: './build/static/capataz_worker.js'
+			}
 		},
-		docker: { //////////////////////////////////////////////////////////////
+		docker: { //////////////////////////////////////////////////////////////////////////////////
 			build: {
 				src: ["src/**/*.js", "tests/**/*.js", "README.md", "docs/**/*.md"],
 				dest: "docs/docker",
@@ -62,37 +77,20 @@ module.exports = function(grunt) {
 					exclude: 'src/**/__*__.js'
 				}
 			}
-		},
-		bowercopy: { ///////////////////////////////////////////////////////////
-			options: {
-				clean: true,
-				runBower: true,
-				srcPrefix: 'bower_components',
-				destPrefix: 'lib'
-			},
-			lib: {
-				files: {
-					'require.js': 'requirejs/require.js',
-					'creatartis-base.js': 'creatartis-base/build/creatartis-base.js',
-					'creatartis-base.js.map': 'creatartis-base/build/creatartis-base.js.map'
-				},
-			}
 		}
 	});
 
-// Load tasks. /////////////////////////////////////////////////////////////////
-	grunt.loadNpmTasks('grunt-concat-sourcemap');
+// Load tasks. /////////////////////////////////////////////////////////////////////////////////////
+	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-contrib-clean');
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.loadNpmTasks('grunt-docker');
-	grunt.loadNpmTasks('grunt-bowercopy');
 	grunt.loadNpmTasks('grunt-contrib-jshint');
 
-// Register tasks. /////////////////////////////////////////////////////////////
-	grunt.registerTask('compile', ['clean:build', 'copy', 'concat_sourcemap:capataz_node', 
-		'jshint:build', 'uglify']);
+// Register tasks. /////////////////////////////////////////////////////////////////////////////////
+	grunt.registerTask('compile', ['clean:build', 'copy:build', 'concat:build', 'jshint:build', 
+		'uglify']);
 	grunt.registerTask('build', ['compile', 'docker']);
 	grunt.registerTask('default', ['build']);
-	grunt.registerTask('lib', ['bowercopy']);
 };
