@@ -120,24 +120,24 @@ var Capataz = exports.Capataz = declare({
 		}).future;
 	},
 	
+	/** The `taskSize` is calculated in order to force the clients to spend approximately the 
+	`desiredEvaluationTime`. In order to minimize network and compilation time clients must not 
+	spend too little nor too much time executing jobs.
+	*/
 	taskSize: function taskSize() {
-		var estimatedJobTime = Math.max(1, this.statistics.average({key:'estimated_time'}));
-		return Math.round(Math.max(1, Math.min(this.config.maxTaskSize,
-			this.config.desiredEvaluationTime / estimatedJobTime
-		)));
+		var statEJT = this.statistics.stat({ key: 'estimated_time' }),
+			estimatedJobTime = Math.max(1, statEJT.average());
+		return statEJT.count() <= 3 ? 1 : Math.round(Math.max(1, 
+			Math.min(this.config.maxTaskSize, this.config.desiredEvaluationTime / estimatedJobTime)
+		));
 	},
 	
 	/** The function `nextTask` builds a new task, which is a bundle of jobs sent to the client 
-	to be executed. If an `amount` is not given, one is calculated to force the clients to spend 
-	approximately the `desiredEvaluationTime`. In order to minimize network and compilation time 
-	clients must not spend too little nor too much time executing jobs.
+	to be executed. If an `amount` is not given, one is calculated with `taskSize()`.
 	*/
 	nextTask: function nextTask(amount) {
 		if (isNaN(amount)) { // If not given, estimate a good task size.
-			var estimatedJobTime = Math.max(1, this.statistics.average({key:'estimated_time'}));
-			amount = Math.round(Math.max(1, Math.min(this.config.maxTaskSize,
-				this.config.desiredEvaluationTime / estimatedJobTime
-			)));
+			amount = this.taskSize();
 		}
 		return {
 			serverStartTime: this.__startTime__,
