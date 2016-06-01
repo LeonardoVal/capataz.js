@@ -111,13 +111,15 @@ var Capataz = exports.Capataz = declare({
 		if (!params.fun) {
 			raise("Cannot schedule ", JSON.stringify(params), ", it has no `fun`!");
 		}
-		return this.store.store({
-			info: params.info,
-			imports: params.imports,
-			args: params.args,
-			fun: params.fun,
-			tags: params.tags
-		}).future;
+		var job = this.store.store({
+				info: params.info,
+				imports: params.imports,
+				args: params.args,
+				fun: params.fun,
+				tags: params.tags
+			}).future;
+		job.fail(this.logger.error.bind(this.logger));
+		return job;
 	},
 	
 	/** The `taskSize` is calculated in order to force the clients to spend approximately the 
@@ -171,14 +173,13 @@ var Capataz = exports.Capataz = declare({
 	the corresponding jobs.
 	*/
 	processResult: function processResult(post) {
-		var job = this.store.assigned(post.id), 
+		var job = this.store.assigned(post.id),
 			status;
 		if (!job) { // Result's job id does not exist.
 			this.logger.debug("Job ", post.id, " not found. Ignoring POST.");
 			status = 'ignored';
 		} else if (this.postIsInvalid(post)) {
-			this.logger.warn("Posted result for ", id, " is not valid. Ignoring POST.");
-			this.jobs[id] = job; // Put the job back.
+			this.logger.warn("Posted result for ", post.id, " is not valid. Ignoring POST.");
 			status = 'invalid';
 		} else if (typeof post.error !== 'undefined') { // Fulfil the job's future.
 			status = 'rejected';
