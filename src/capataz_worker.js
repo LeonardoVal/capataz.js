@@ -26,18 +26,19 @@ worker that executes the jobs' code in the client machine.
 		and send the result back to the rendering thread.
 		*/
 		self.onmessage = function onmessage(msg) {
-			var data = JSON.parse(msg.data);
-			base.Future.invoke(eval, self, 
-				('(function () {'+ // Job wrapper.
-					'return base.Future.imports.apply(this, '+ JSON.stringify(data.imports || []) +').then(function (deps) {'+
-						'return ('+ data.fun +').apply(this, deps.concat('+ JSON.stringify(data.args || []) +'));'+
-					'});'+
-				'})()')
-			).then(function (result) {
+			var data = JSON.parse(msg.data),
+				code = '(function () {"use strict";\n'+ // Job wrapper.
+					'\treturn base.Future.imports.apply(this, '+ JSON.stringify(data.imports || []) +').then(function (deps) {\n'+
+						'\t\treturn ('+ data.fun +').apply(this, deps.concat('+ JSON.stringify(data.args || []) +'));\n'+
+					'\t});\n'+
+				'})()';
+			
+			base.Future.invoke(eval, self, code).then(function (result) {
 				data.result = result;
 				self.postMessage(JSON.stringify(data));
 			}, function (error) { 
-				data.error = error +''; // Error instances are not serializable.
+				data.error = 'Execution failed with "'+ error +'"!\nCode:\n'+ code +'\nCallstack:\n\t'+
+					base.callStack(error).join('\n\t'); // Error instances are not serializable.
 				self.postMessage(JSON.stringify(data));
 			});
 		};
