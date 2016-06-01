@@ -67,6 +67,14 @@ module.exports = function(grunt) {
 				dest: './build/static/capataz_worker.js'
 			}
 		},
+		mochaTest: { ///////////////////////////////////////////////////////////////////////////////
+			test: {
+				options: {
+					reporter: 'spec'
+				},
+				src: ['tests/specs/*.test.js']
+			}
+		},
 		docker: { //////////////////////////////////////////////////////////////////////////////////
 			build: {
 				src: ["src/**/*.js", "tests/**/*.js", "README.md", "docs/**/*.md"],
@@ -87,10 +95,12 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.loadNpmTasks('grunt-docker');
 	grunt.loadNpmTasks('grunt-contrib-jshint');
+	grunt.loadNpmTasks('grunt-mocha-test');
 
 // Register tasks. /////////////////////////////////////////////////////////////////////////////////
 	grunt.registerTask('compile', ['clean:build', 'copy:build', 'concat:build', 'jshint:build', 
 		'uglify']);
-	grunt.registerTask('build', ['compile', 'docker']);
+	grunt.registerTask('test', ['mochaTest:test']);
+	grunt.registerTask('build', ['compile', 'test', 'docker']);
 	grunt.registerTask('default', ['build']);
 };
