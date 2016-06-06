@@ -22,7 +22,7 @@ var fs = require('fs'),
 /** Configure and start the server instance.
 */
 	capataz = capataz_node.Capataz.run({
-		workerCount: 2,
+		workerCount: -2,
 		desiredEvaluationTime: 5000,
 		port: 80,
 		logFile: base.Text.formatDate(null, '"./tests/logs/pi_estimation-log-"yyyymmdd-hhnnss".txt"'),

@@ -173,7 +173,7 @@ require(['creatartis-base'], function (base) { "use strict";
 			CONFIG = APP.CONFIG = base.copy(args, configJSON, { 
 				/** If still parameters are missing, defaults values are assumed. */
 				jobURI: 'task.json',
-				workerCount: 2,
+				workerCount: 0,
 				maxRetries: 50,
 				minDelay: 100, // 100 milliseconds.
 				maxDelay: 2 * 60000, // 2 minutes.
@@ -184,9 +184,11 @@ require(['creatartis-base'], function (base) { "use strict";
 			CONFIG.startTime = Date.now(); 
 			/** The logger is set up to show in the document, so the user can see it. */
 			LOGGER.appendToHtml('log', CONFIG.logLength);
-			LOGGER.info('Starting '+ CONFIG.workerCount +' workers.');
 			/** As many drudgers are created and started as `CONFIG.workerCount`. */
-			APP.drudgers = base.Iterable.range(CONFIG.workerCount).map(function () {
+			var workerCount = CONFIG.workerCount > 0 ? +CONFIG.workerCount : 
+				Math.max(1, -CONFIG.workerCount, navigator.hardwareConcurrency - 1 |0);
+			LOGGER.info('Starting '+ workerCount +' workers.');
+			APP.drudgers = base.Iterable.range(workerCount).map(function () {
 				return new APP.Drudger();
 			}).toArray();
 			return base.Future.sequence(APP.drudgers, function (drudger) {

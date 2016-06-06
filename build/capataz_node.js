@@ -42,9 +42,12 @@ var Capataz = exports.Capataz = declare({
 		The parameters that deal with the workload distribution are: 
 		*/
 		initialize(this.config = {}, config)
-		/** + `workerCount = 2` controls how many web workers the clients spawn.
+		/** + `workerCount = 0` controls how many web workers the clients spawn. If it is less than 
+		1, the client tries to adjust to the host machine. If [`navigator.hardwareConcurrency`
+		](https://wiki.whatwg.org/wiki/Navigator_HW_Concurrency) is available, its value minus 1 is
+		used. Else the maximum between 1 and `-workerCount` is used.
 		*/
-			.integer('workerCount', { defaultValue: 2, coerce: true })
+			.integer('workerCount', { defaultValue: 0, coerce: true })
 		/** + `maxRetries = 100` defines how many times the clients should retry failed 
 		connections to the server.
 		*/
@@ -219,13 +222,15 @@ var Capataz = exports.Capataz = declare({
 			status = 'resolved';
 			job.future.resolve(post.result);
 		}
-		this.accountPost(post, job, status);
+		if (job) {
+			this.accountPost(post, job, status);
+		}
 	},
 	
 	/** Gathers statistics about completed jobs. Some are used in the server's own operation.
 	*/
 	accountPost: function accountPost(post, job, status) {
-		if (status == 'resolved') {
+		if (status === 'resolved') {
 			this.statistics.gain({key: 'estimated_time'}, post.time, 
 				this.config.evaluationTimeGainFactor);
 		}
