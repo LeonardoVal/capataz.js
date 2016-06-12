@@ -51,9 +51,9 @@ function jobFunction(partition, numbers) {
 }
 
 /** The amount of possible partitions (and hence of jobs) is `2^(NUMBERS.length-1)-1`. A list of all
-the jobs in the whole run is implemented by a [Python-style generator](https://wiki.python.org/moin/Generators)
-(using `base.Iterable`). This allows for all jobs to be listed without storing them all in memory at
-once.
+the jobs in the whole run is implemented by a [Python-style generator
+](https://wiki.python.org/moin/Generators) (using `base.Iterable`). This allows for all jobs to be 
+listed without storing them all in memory at once.
 */
 var partitionCount = Math.pow(2, NUMBERS.length - 1) - 1,
 	jobs = base.Iterable.range(partitionCount).map(function (partition) {
@@ -84,5 +84,5 @@ server.scheduleAll(jobs, 1000, function (scheduled) {
 	});
 }).then(function () {
 	server.logger.info("Finished. Stopping server.");
-	process.exit();
+	setTimeout(process.exit, 10);
 });

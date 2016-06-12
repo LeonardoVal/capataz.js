@@ -57,5 +57,5 @@ server.scheduleAll(jobs, 2000, function (scheduled) {
 	});
 }).then(function () {
 	server.logger.info("Finished. Stopping server.");
-	process.exit();
+	setTimeout(process.exit, 10);
 });

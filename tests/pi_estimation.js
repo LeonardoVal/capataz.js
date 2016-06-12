@@ -1,7 +1,6 @@
 ﻿/** # Pi estimation
 
-This is a test of the Capataz server, making a distributed (very) brute force 
-estimation of Pi.
+This is a test of the Capataz server, making a distributed (very) brute force estimation of Pi.
 */
 "use strict";
 /** Import dependencies ...
@@ -44,8 +43,8 @@ function jobError_function() {
 	throw new Error("Failing on purpose.");
 }
 
-/** The test performs many repetitions of the estimation, dividing the 
-complexity among different amounts of jobs. 
+/** The test performs many repetitions of the estimation, dividing the complexity among different
+amounts of jobs. 
 */
 base.Future.sequence(base.Iterable.range(CONFIG.repetitions).product(CONFIG.jobCounts, CONFIG.taskSizes), function (args) {
 	var repetition = +args[0],
@@ -71,10 +70,9 @@ base.Future.sequence(base.Iterable.range(CONFIG.repetitions).product(CONFIG.jobC
 	}
 		
 	fulltimeStat.startTime();
-/** Here all jobs are generated. Basically the range [0, CONFIG.radius) is split 
-in `jobCount` jobs. Each job is a call to `job_function` with a slice of the 
-domain (left and right borders) and the `CONFIG.radius` value. No imports are 
-needed, and the `info` is provided to improve clients' logs.
+/** Here all jobs are generated. Basically the range [0, CONFIG.radius) is split in `jobCount` jobs.
+Each job is a call to `job_function` with a slice of the domain (left and right borders) and the
+`CONFIG.radius` value. No imports are needed, and the `info` is provided to improve clients' logs.
 */
 	capataz.config.maxTaskSize = taskSize;
 	return capataz.scheduleAll(base.Iterable.range(0, CONFIG.radius, step).map(function (x) {
@@ -84,16 +82,16 @@ needed, and the `info` is provided to improve clients' logs.
 			info: 'x <- ['+ x + ', '+ (x + step) +')', 
 			tags: tags
 		};
-/**	The `scheduleAll` method takes from the generator in chunks of 1000 jobs,
-scheduling and waiting before dealing with the next chunk. At each scheduled
-job this callback is called. This allows to work with the future of the
-scheduled job. In this case, only a simple aggregation of the results is needed.
+/**	The `scheduleAll` method takes from the generator in chunks of 1000 jobs, scheduling and waiting
+before dealing with the next chunk. At each scheduled job this callback is called. This allows to
+work with the future of the scheduled job. In this case, only a simple aggregation of the results is
+needed.
 */
 	}), 1000, function (scheduled) {
 		return accumulate(scheduled, tags);
-/** The future returned by `scheduleAll` is fulfilled when all jobs have been
-completed. Here the estimation error is calculated, logged, and added to the run
-statistics. The statistic used to adjust the task size is reset.
+/** The future returned by `scheduleAll` is fulfilled when all jobs have been completed. Here the
+estimation error is calculated, logged, and added to the run statistics. The statistic used to 
+adjust the task size is reset.
 */
 	}).then(function (values) {
 		fulltimeStat.addTime();
@@ -112,10 +110,10 @@ statistics. The statistic used to adjust the task size is reset.
 		jobs_per_task.reset();
 		capataz.statistics.reset({key:'estimated_time'});
 	});
-/** The future build by `Future.sequence` is fulfilled when all repetitions have
-been completed. Here the server is shut down.
+/** The future build by `Future.sequence` is fulfilled when all repetitions have been completed. 
+Here the server is shut down.
 */
 }).then(function () {
 	capataz.logger.info('Run statistics:\n'+ capataz.statistics);
-	process.exit();
+	setTimeout(process.exit, 10);
 });
