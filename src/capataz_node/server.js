@@ -11,12 +11,20 @@ var Capataz = exports.Capataz = declare({
 		The parameters that deal with the workload distribution are: 
 		*/
 		initialize(this.config = {}, config)
-		/** + `workerCount = 0` controls how many web workers the clients spawn. If it is less than 
-		1, the client tries to adjust to the host machine. If [`navigator.hardwareConcurrency`
-		](https://wiki.whatwg.org/wiki/Navigator_HW_Concurrency) is available, its value minus 1 is
-		used. Else the maximum between 1 and `-workerCount` is used.
+		/** + `workerCount = 2` controls how many web workers the clients spawn. This may be changed
+		by the browser (see `adjustWorkerCount`).
 		*/
-			.integer('workerCount', { defaultValue: 0, coerce: true })
+			.integer('workerCount', { defaultValue: 2, coerce: true })
+		/** + `useWebworkers = 1` constraints the use of webworkers. If possitive (by default), all
+		jobs must be run by webworkers. If negative, all jobs must be run by the rendering thread.
+		Else, jobs can be run either way.
+		*/
+			.integer('useWebworkers', { defaultValue: 1, coerce: true })
+		/** + `adjustWorkerCount = true` makes the client to set the `workerCount` to the value of
+		[`navigator.hardwareConcurrency`](https://wiki.whatwg.org/wiki/Navigator_HW_Concurrency) if 
+		available.
+		*/
+			.bool('adjustWorkerCount', { defaultValue: true, coerce: true })
 		/** + `maxRetries = 100` defines how many times the clients should retry failed 
 		connections to the server.
 		*/
@@ -27,11 +35,7 @@ var Capataz = exports.Capataz = declare({
 		/** + `maxDelay = 15m` sets the maximum delay between retries.
 		*/
 			.number('maxDelay', { defaultValue: 15 * 60000 , coerce: true })
-		/** + `useWebworkers = 1` constraints the use of webworkers. If possitive (by default), all
-		jobs must be run by webworkers. If negative, all jobs must be run by the rendering thread.
-		Else, jobs can be run either way.
-		*/
-			.integer('useWebworkers' , { defaultValue: 1, coerce: true })
+		
 		/** + `desiredEvaluationTime = 10s` defines the expected time the browsers must spend 
 		on each task. The server will bundle jobs if clients execute them faster than this value.
 		*/
@@ -222,6 +226,7 @@ var Capataz = exports.Capataz = declare({
 		response.json({
 			jobURI: this.config.taskRoute,
 			workerCount: this.config.workerCount,
+			adjustWorkerCount: this.config.adjustWorkerCount,
 			maxRetries: this.config.maxRetries,
 			minDelay: this.config.minDelay,
 			maxDelay: this.config.maxDelay,
