@@ -15,7 +15,10 @@ require(['creatartis-base'], function (base) { "use strict";
 	The Drudger is a wrapper for the rendering thread's side of a web worker.
 	*/
 	APP.Drudger = base.declare({
-		constructor: function Drudger() { // Nothing for now.
+		'static __count__': 0,
+	
+		constructor: function Drudger() {
+			this.__number__ = Drudger.__count__++;
 		},
 
 		/** When a drudger starts it attempts to create and initialize his webworker. For this it
@@ -66,21 +69,23 @@ require(['creatartis-base'], function (base) { "use strict";
 		than `CONFIG.maxDelay` milliseconds.
 		*/
 		getTask: function getTask() {
+			var drudger = this;
 			return base.Future.retrying(function () {
-				LOGGER.info('< Requesting jobs.');
+				LOGGER.info(drudger.__number__ +' < Requesting jobs.');
 				return base.HttpRequest.getJSON(CONFIG.jobURI).then(function (task) {
 					if (task.serverStartTime > CONFIG.startTime) {
-						LOGGER.info('> Definitions are outdated. Reloading...');
+						LOGGER.info(drudger.__number__ +' > Definitions are outdated. Reloading...');
 						window.location.reload();
 					}
-					LOGGER.info('> Received '+ task.jobs.length +' jobs. E.g.: '+ task.jobs[0].info);
+					LOGGER.info(drudger.__number__ +' > Received '+ task.jobs.length +' jobs. E.g.: '+ task.jobs[0].info);
 					return task;
 				}, function (xhr) {
-					LOGGER.warn('! Job request failed: ', xhr.status, ' ', 	xhr.statusText, ': ', xhr.responseText, '');
+					LOGGER.warn(drudger.__number__ +' ! Job request failed (status: ', xhr.status, ' ',
+						xhr.statusText, ' "', xhr.responseText, '")!');
 					throw new Error('Job request failed!'); // So failure is not captured.
 				});
 			}, CONFIG.maxRetries, CONFIG.minDelay, 2, CONFIG.maxDelay).fail(function () {
-				LOGGER.error('Job request failed too many times. Not retrying anymore.');
+				LOGGER.error(drudger.__number__ +' ! Job request failed too many times! Not retrying anymore.');
 			});
 		},
 		
@@ -95,12 +100,12 @@ require(['creatartis-base'], function (base) { "use strict";
 				return drudger.doJob(job).then(function (result) { // Jobs finishes well.
 					job.result = result; 
 					job.time = Date.now() - job.startedAt;
-					LOGGER.debug('> ', job.info, ' -> ', result);
+					LOGGER.debug(drudger.__number__ +' > ', job.info, ' -> ', result);
 					return job;
 				}, function (error) { // Jobs finishes badly or aborts.
 					job.error = error;
 					job.time = Date.now() - job.startedAt;
-					LOGGER.warn('> ', job.info, ' !! ', error);
+					LOGGER.warn(drudger.__number__ +' > ', job.info, ' !! ', error);
 					return job;
 				});
 			}).then(function () {
@@ -128,13 +133,14 @@ require(['creatartis-base'], function (base) { "use strict";
 		the server using the same URI where the task was obtained from.
 		*/
 		postResults: function postResults(task) {
+			var drudger = this;
 			return base.Future.retrying(function () {
-				LOGGER.info("< Posting results.");
+				LOGGER.info(drudger.__number__ +" < Posting results.");
 				return base.HttpRequest.postJSON(CONFIG.jobURI, task).fail(function (xhr) {
-					LOGGER.warn('! Posting failed: ', xhr.status, ' ', xhr.statusText, ' ', xhr.responseText, '.');
+					LOGGER.warn(drudger.__number__ +' ! Posting failed: ', xhr.status, ' ', xhr.statusText, ' ', xhr.responseText, '.');
 				});
 			}, CONFIG.maxRetries, CONFIG.minDelay, 2, CONFIG.maxDelay).fail(function () {
-				LOGGER.error('Job result post failed too many times. Not retrying anymore.');
+				LOGGER.error(drudger.__number__ +' ! Job result post failed too many times! Not retrying anymore.');
 			});
 		},
 		
@@ -150,7 +156,7 @@ require(['creatartis-base'], function (base) { "use strict";
 			}, function () { 
 				return true; // Loop forever.
 			}).fail(function (err) {
-				LOGGER.error('Uncaught error on drudger! '+ err);
+				LOGGER.error(drudger.__number__ +' Uncaught error on drudger! '+ err);
 			});
 		}
 	}); // declare Drudger.
@@ -173,7 +179,8 @@ require(['creatartis-base'], function (base) { "use strict";
 			CONFIG = APP.CONFIG = base.copy(args, configJSON, { 
 				/** If still parameters are missing, defaults values are assumed. */
 				jobURI: 'task.json',
-				workerCount: 0,
+				workerCount: 2,
+				adjustWorkerCount: true,
 				maxRetries: 50,
 				minDelay: 100, // 100 milliseconds.
 				maxDelay: 2 * 60000, // 2 minutes.
@@ -185,8 +192,8 @@ require(['creatartis-base'], function (base) { "use strict";
 			/** The logger is set up to show in the document, so the user can see it. */
 			LOGGER.appendToHtml('log', CONFIG.logLength);
 			/** As many drudgers are created and started as `CONFIG.workerCount`. */
-			var workerCount = CONFIG.workerCount > 0 ? +CONFIG.workerCount : 
-				Math.max(1, -CONFIG.workerCount, navigator.hardwareConcurrency - 1 |0);
+			var workerCount = CONFIG.adjustWorkerCount && navigator.hardwareConcurrency ?
+				navigator.hardwareConcurrency : CONFIG.workerCount;
 			LOGGER.info('Starting '+ workerCount +' workers.');
 			APP.drudgers = base.Iterable.range(workerCount).map(function () {
 				return new APP.Drudger();
