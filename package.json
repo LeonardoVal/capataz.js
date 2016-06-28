@@ -2,7 +2,7 @@
 	"name": "capataz",
 	"description": "A framework to set up distributed algorithm via HTTP and Javascript.",
 	"keywords": [ "distributed computing", "distributed algorithm" ],
-	"version": "0.1.4",
+	"version": "0.1.5",
 	"author": {
 		"name": "Leonardo Val",
 		"email": "leonardo.val@creatartis.com"
