@@ -1,4 +1,4 @@
-rem This batch file can be used to quickly setup PCs Windows 7 or more.
+﻿rem This batch file can be used to quickly setup PCs Windows 7 or more.
 @echo off
 rem Change Windows power settings to avoid the computer suspension or hibernation.
 powercfg -hibernate off
