@@ -9,4 +9,5 @@ bower_components/
 # Generated files
 docs/docker/
 tools/
+tests/logs/
 npm-debug.log
