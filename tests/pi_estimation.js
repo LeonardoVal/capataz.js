@@ -13,7 +13,7 @@ var fs = require('fs'),
 	CONFIG = {
 		radius: Math.pow(2, 32) - 1,
 		repetitions: 40,
-		jobCounts: base.Iterable.range(17).map(function (e) { 
+		jobCounts: base.Iterable.range(17).map(function (e) {
 			return Math.pow(2, e);
 		}).toArray(),
 		taskSizes: [1, 10, 20, 30, 50, 100]
@@ -23,7 +23,7 @@ var fs = require('fs'),
 	capataz = capataz_node.Capataz.run({
 		workerCount: -2,
 		desiredEvaluationTime: 5000,
-		port: 80,
+		port: 8080,
 		logFile: base.Text.formatDate(null, '"./tests/logs/pi_estimation-log-"yyyymmdd-hhnnss".txt"'),
 	});
 
@@ -44,7 +44,7 @@ function jobError_function() {
 }
 
 /** The test performs many repetitions of the estimation, dividing the complexity among different
-amounts of jobs. 
+amounts of jobs.
 */
 base.Future.sequence(base.Iterable.range(CONFIG.repetitions).product(CONFIG.jobCounts, CONFIG.taskSizes), function (args) {
 	var repetition = +args[0],
@@ -54,11 +54,11 @@ base.Future.sequence(base.Iterable.range(CONFIG.repetitions).product(CONFIG.jobC
 		pi = 0,
 /** Tags are used to separate the statistics of runs with different parameters.
 */
-		tags = { 
+		tags = {
 			step: base.Text.lpad(''+ step, Math.ceil(Math.log(CONFIG.radius) / Math.log(10)), '0'),
 			taskSize: base.Text.lpad(''+ taskSize, 3, '0')
 		},
-		fulltimeStat = capataz.statistics.stat(base.copy({key:'fulltime'}, tags));		
+		fulltimeStat = capataz.statistics.stat(base.copy({key:'fulltime'}, tags));
 /** This function returns a future that accumulates results and accounts errors.
 */
 	function accumulate(job) {
@@ -68,7 +68,7 @@ base.Future.sequence(base.Iterable.range(CONFIG.repetitions).product(CONFIG.jobC
 			capataz.statistics.add(base.copy({key:'rejected_jobs', err: ''+ err }, tags), 1);
 		});
 	}
-		
+
 	fulltimeStat.startTime();
 /** Here all jobs are generated. Basically the range [0, CONFIG.radius) is split in `jobCount` jobs.
 Each job is a call to `job_function` with a slice of the domain (left and right borders) and the
@@ -76,10 +76,10 @@ Each job is a call to `job_function` with a slice of the domain (left and right 
 */
 	capataz.config.maxTaskSize = taskSize;
 	return capataz.scheduleAll(base.Iterable.range(0, CONFIG.radius, step).map(function (x) {
-		return { 
-			fun: job_function, 
+		return {
+			fun: job_function,
 			args: [x, x + step, CONFIG.radius],
-			info: 'x <- ['+ x + ', '+ (x + step) +')', 
+			info: 'x <- ['+ x + ', '+ (x + step) +')',
 			tags: tags
 		};
 /**	The `scheduleAll` method takes from the generator in chunks of 1000 jobs, scheduling and waiting
@@ -90,7 +90,7 @@ needed.
 	}), 1000, function (scheduled) {
 		return accumulate(scheduled, tags);
 /** The future returned by `scheduleAll` is fulfilled when all jobs have been completed. Here the
-estimation error is calculated, logged, and added to the run statistics. The statistic used to 
+estimation error is calculated, logged, and added to the run statistics. The statistic used to
 adjust the task size is reset.
 */
 	}).then(function (values) {
@@ -110,7 +110,7 @@ adjust the task size is reset.
 		jobs_per_task.reset();
 		capataz.statistics.reset({key:'estimated_time'});
 	});
-/** The future build by `Future.sequence` is fulfilled when all repetitions have been completed. 
+/** The future build by `Future.sequence` is fulfilled when all repetitions have been completed.
 Here the server is shut down.
 */
 }).then(function () {

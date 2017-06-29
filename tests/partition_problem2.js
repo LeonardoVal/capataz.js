@@ -1,32 +1,32 @@
 /** # Partition problem 2
 
-Example problem used in the [second example](../docs/tutorial.md.html#second example) of the 
+Example problem used in the [second example](../docs/tutorial.md.html#second example) of the
 tutorial. Please see the [first example](partition_problem1.js.html) before reading this.
 */
 "use strict";
 require('source-map-support').install();
 
 /** In this version of the problem some of the logic will be put in a [RequireJS](http://www.requirejs.org)
-module. Since it will have to be loaded by the clients, the server must be configured to serve it. 
-Hence the `customFiles` parameter is added to the server's configuration, pointing at the folder 
+module. Since it will have to be loaded by the clients, the server must be configured to serve it.
+Hence the `customFiles` parameter is added to the server's configuration, pointing at the folder
 that contains the module file. All the rest is the same as the previous example.
 */
 var capataz = require('../build/capataz_node'),
 	base = capataz.__dependencies__.base,
 	server = capataz.Capataz.run({
-		port: 80,
+		port: 8080,
 		logFile: base.Text.formatDate(null, '"./tests/logs/partition_problem2-log-"yyyymmdd-hhnnss".txt"'),
 		customFiles: './tests/partition_problem_static'
 	});
 
-/** The numbers could have been added to the module as well, but then it would be harder to 
+/** The numbers could have been added to the module as well, but then it would be harder to
 experiment with different lists of numbers.
 */
 var NUMBERS = [61, 83, 88, 94, 121, 281, 371, 486, 554, 734, 771, 854, 885, 1003];
 
-/** The `jobs` generator has two major changes. First the former `jobFunction` definition is 
+/** The `jobs` generator has two major changes. First the former `jobFunction` definition is
 missing, since it has been moved to the RequireJS module. Clients are told to load this module by
-adding its name (or path) in the `imports` field. Imported modules will be passed as arguments to 
+adding its name (or path) in the `imports` field. Imported modules will be passed as arguments to
 the job function, before the ones in `args`. Thats why the new `jobFunction` has an extra argument
 `m`, for the module.
 */
