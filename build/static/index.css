@@ -5,44 +5,33 @@
 }
 body {
 	font-family: sans-serif;
-	color: white;
+	color: rgb(255,105,25);
 	background-color: black;
-}
-
-#container {
-	height: 80%;
-	overflow: auto;
-	border-top: 1px solid rgb(255,105,25);
-	border-bottom: 1px solid rgb(255,105,25);
-}
-
-#header {
-	width: 100%;
-	height: 10%;
 	text-align: center;
 }
-#header header {
+h1 {
 	font-size: 200%;
 	font-weight: bold;
 	color: black;
 	background-color: rgb(255,105,25);
 	padding: 0.25em;
 }
-
-#footer {
-	width: 100%;
-	height: 10%;
-	color: rgb(255,105,25);
-	text-align: center;
+h2 {
+	font-size: 150%;
+	font-weight: bold;
+	color: black;
+	background-color: rgb(255,105,25);
+	padding: 0.2em;
 }
-
 a {
-	color: rgb(255,105,25);
 	text-decoration: none;
 	font-weight: bold;
 }
 a:hover {
-	color: rgb(255,105,25);
 	text-decoration: underline;
 	font-weight: bold;
+	color: rgb(255,105,25);
+}
+a:visited {
+	color: rgb(255,105,25);
 }
