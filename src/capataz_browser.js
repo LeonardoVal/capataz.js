@@ -7,6 +7,7 @@ Capataz module to run in a browser. It handles AJAX calls and manages the
 require(['creatartis-base'], function (base) { "use strict";
 	window.base = base;
 	var APP = window.APP = {},
+		STATS = APP.stats = { received: 0, finished: 0, failed: 0, reported: 0 },
 		CONFIG;
 
 	/** ## Drudger #################################################################################
@@ -77,6 +78,8 @@ require(['creatartis-base'], function (base) { "use strict";
 						window.location.reload();
 					}
 					console.info(drudger.__number__ +' > Received '+ task.jobs.length +' jobs. E.g.: '+ task.jobs[0].info);
+					STATS.received++;
+					APP.updateJobReport();
 					return task;
 				}, function (xhr) {
 					console.warn(drudger.__number__ +' ! Job request failed (status: ', xhr.status, ' ',
@@ -97,6 +100,8 @@ require(['creatartis-base'], function (base) { "use strict";
 				job.clientPlatform = navigator.platform; // Set job's client properties.
 				job.startedAt = Date.now();
 				return drudger.doJob(job).then(function (result) { // Jobs finishes well.
+					STATS.finished++;
+					APP.updateJobReport();
 					job.result = result;
 					job.time = Date.now() - job.startedAt;
 					if (CONFIG.logDebug) {
@@ -107,6 +112,8 @@ require(['creatartis-base'], function (base) { "use strict";
 					job.error = error;
 					job.time = Date.now() - job.startedAt;
 					console.warn(drudger.__number__ +' > ', job.info, ' !! ', error);
+					STATS.failed++;
+					APP.updateJobReport();
 					return job;
 				});
 			}).then(function () {
@@ -137,9 +144,15 @@ require(['creatartis-base'], function (base) { "use strict";
 			var drudger = this;
 			return base.Future.retrying(function () {
 				console.info(drudger.__number__ +" < Posting results.");
-				return base.HttpRequest.postJSON(CONFIG.jobURI, task).fail(function (xhr) {
-					console.warn(drudger.__number__ +' ! Posting failed: ', xhr.status, ' ', xhr.statusText, ' ', xhr.responseText, '.');
-				});
+				return base.HttpRequest.postJSON(CONFIG.jobURI, task)
+					.done(function () {
+						STATS.reported++;
+						APP.updateJobReport();
+					})
+					.fail(function (xhr) {
+						console.warn(drudger.__number__ +' ! Posting failed: ', xhr.status,
+							' ', xhr.statusText, ' ', xhr.responseText, '.');
+					});
 			}, CONFIG.maxRetries, CONFIG.minDelay, 2, CONFIG.maxDelay).fail(function () {
 				console.error(drudger.__number__ +' ! Job result post failed too many times! Not retrying anymore.');
 			});
@@ -204,6 +217,13 @@ require(['creatartis-base'], function (base) { "use strict";
 			});
 		});
 	}; // APP.start().
+
+	APP.updateJobReport = function updateJobReport() {
+		var p = document.getElementById('job-report'),
+			stats = this.stats;
+		p.innerHTML = 'Tasks: '+ stats.received +' received, '+ stats.reported +' reported.'+
+			'<br/>Jobs: '+ stats.finished +' finished, '+ stats.failed +' failed.';
+	};
 
 	if (document.readyState === 'complete') {
 		APP.start();
