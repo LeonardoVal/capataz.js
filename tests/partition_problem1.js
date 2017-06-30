@@ -14,6 +14,9 @@ var capataz = require('../build/capataz_node'),
 	base = capataz.__dependencies__.base,
 	server = capataz.Capataz.run({
 		port: 8080,
+		adjustWorkerCount: false, // Don't adjust the workerCount to the number of cores.
+		workerCount: 2,
+		desiredEvaluationTime: 500, // 500ms
 		logFile: base.Text.formatDate(null, '"./tests/logs/partition_problem1-log-"yyyymmdd-hhnnss".txt"')
 	});
 
