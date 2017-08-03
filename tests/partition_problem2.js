@@ -12,7 +12,7 @@ Hence the `customFiles` parameter is added to the server's configuration, pointi
 that contains the module file. All the rest is the same as the previous example.
 */
 var capataz = require('../build/capataz_node'),
-	base = capataz.__dependencies__.base,
+	base = require('creatartis-base'),
 	server = capataz.Capataz.run({
 		port: 8080,
 		logFile: base.Text.formatDate(null, '"./tests/logs/partition_problem2-log-"yyyymmdd-hhnnss".txt"'),

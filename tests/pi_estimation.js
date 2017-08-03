@@ -7,7 +7,7 @@ This is a test of the Capataz server, making a distributed (very) brute force es
 */
 var fs = require('fs'),
 	capataz_node = require('../build/capataz_node.min'),
-	base = capataz_node.__dependencies__.base,
+	base = require('creatartis-base'),
 /** ... and define this run's parameters.
 */
 	CONFIG = {
