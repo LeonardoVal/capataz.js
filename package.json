@@ -1,7 +1,10 @@
-﻿{
+{
 	"name": "capataz",
 	"description": "A framework to set up distributed algorithm via HTTP and Javascript.",
-	"keywords": [ "distributed computing", "distributed algorithm" ],
+	"keywords": [
+		"distributed computing",
+		"distributed algorithm"
+	],
 	"version": "0.1.5",
 	"author": {
 		"name": "Leonardo Val",
@@ -9,7 +12,10 @@
 	},
 	"homepage": "http://creatartis.com",
 	"contributors": [
-		{ "name": "Gonzalo Martínez", "email": "gonzalo.martinez@live.com" }
+		{
+			"name": "Gonzalo Martínez",
+			"email": "gonzalo.martinez@live.com"
+		}
 	],
 	"license": "MIT",
 	"repository": {
@@ -24,22 +30,22 @@
 	],
 	"dependencies": {
 		"express": "~3.0.0",
-		"creatartis-base": "~0.1.7"
+		"creatartis-base": "~0.1.7",
+		"sermat": "~0.0.8"
 	},
 	"devDependencies": {
 		"source-map-support": "~0.4.0",
-		"sermat": "~0.0.8",
 		"requirejs": "~2.2.0",
 		"grunt": "~1.0.0",
-			"grunt-contrib-clean": "~1.0.0",
-			"grunt-contrib-copy": "~1.0.0",
-			"grunt-contrib-concat": "~1.0.0",
-			"grunt-contrib-uglify": "~1.0.0",
-			"grunt-docker": "~0.0.11",
-			"grunt-contrib-jshint": "~1.0.0",
+		"grunt-contrib-clean": "~1.0.0",
+		"grunt-contrib-copy": "~1.0.0",
+		"grunt-contrib-concat": "~1.0.0",
+		"grunt-contrib-uglify": "~1.0.0",
+		"grunt-docker": "~0.0.11",
+		"grunt-contrib-jshint": "~1.0.0",
 		"grunt-mocha-test": "~0.12.7",
-			"mocha": "~2.5.2",
-			"chai": "~3.5.0"
+		"mocha": "~2.5.2",
+		"chai": "~3.5.0"
 	},
 	"scripts": {
 		"partition_problem1": "grunt & node tests/partition_problem1.js",
