@@ -187,10 +187,13 @@ require(['creatartis-base'], function (base) { "use strict";
 				args[arg[0]] = arg[1];
 			}
 		});
+		if (!args.hasOwnProperty('adjustWorkerCount') && args.hasOwnProperty('workerCount')) {
+			args.adjustWorkerCount = false;
+		}
 		/** Then `config.json` is requested from the server. All parameters not specified in the
 		query string are taken from this file. */
 		return base.HttpRequest.getJSON(args.configURI || 'config.json').then(function (configJSON) {
-			CONFIG = APP.CONFIG = base.copy(args, configJSON, {
+			CONFIG = APP.CONFIG = Object.assign({
 				/** If still parameters are missing, defaults values are assumed. */
 				jobURI: 'task.json',
 				workerCount: 2,
@@ -200,7 +203,7 @@ require(['creatartis-base'], function (base) { "use strict";
 				maxDelay: 2 * 60000, // 2 minutes.
 				logLength: 30, //FIXME 30 lines.
 				logDebug: false
-			});
+			}, configJSON, args);
 			/** Timestamp is used to compare with the server's. In case the server's is newer, a
 			reload is forced, since dependencies may be outdated. */
 			CONFIG.startTime = Date.now();
