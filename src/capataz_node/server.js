@@ -3,6 +3,10 @@
 The Capataz constructor builds Capataz servers which can schedule jobs and assign them to connecting
 browsers. It is based on a [ExpressJS](http://expressjs.com/) application.
 */
+var bodyParser = require('body-parser'),
+	favicon = require('serve-favicon');
+
+
 var Capataz = exports.Capataz = declare({
 	constructor: function Capataz(config) {
 		/** The `config` property holds configuration options. Some will be shown to the clients,
@@ -305,28 +309,31 @@ var Capataz = exports.Capataz = declare({
 	configureApp: function configureApp(app) {
 		var config = this.config;
 		app = app || express();
-		app.use(express.json()); // Enable JSON parsing.
+		app.use(bodyParser.json()); // Enable JSON parsing.
 		if (config.compression) {
-			app.use(express.compress());
+			app.use(require('compression')());
 		}
+		app.use(favicon(config.serverFiles +'/favicon.ico'));
+		
+		var staticRoute = config.staticRoute;
 		app.get('/', function(req, res) { // Redirect the root to <staticRoute/index.html>.
-			res.redirect(config.staticRoute +'/index.html');
+			res.redirect(staticRoute +'/index.html');
 		});
-		app.get(config.routes.task || '/capataz/task.json', this.get_task.bind(this)); // REST API.
-		app.post(config.routes.task || '/capataz/task.json', this.post_task.bind(this));
-		app.get(config.routes.config || '/capataz/config.json', this.get_config.bind(this));
-		app.get(config.routes.stats || '/capataz/stats.json', this.get_stats.bind(this));
-		app.get(config.routes.store || '/capataz/store.json', this.get_store.bind(this));
+		app.get(config.routes.task || staticRoute +'/task.json', this.get_task.bind(this)); // REST API.
+		app.post(config.routes.task || staticRoute +'/task.json', this.post_task.bind(this));
+		app.get(config.routes.config || staticRoute +'/config.json', this.get_config.bind(this));
+		app.get(config.routes.stats || staticRoute +'/stats.json', this.get_stats.bind(this));
+		app.get(config.routes.store || staticRoute +'/store.json', this.get_store.bind(this));
 		if (typeof config.authentication === 'function') {
-			[config.staticRoute, config.taskRoute, config.configRoute, config.statsRoute].forEach(function (route) {
+			[staticRoute, config.taskRoute, config.configRoute, config.statsRoute].forEach(function (route) {
 				app.use(route, express.basicAuth(config.authentication.bind(this, route)));
 			});
 		}
-		app.use(config.staticRoute, express.static(config.serverFiles)); // Static files.
+		app.use(staticRoute, express.static(config.serverFiles)); // Static files.
 		config.customFiles.split('\n').forEach(function (path) {
 			path = path.trim();
 			if (path) {
-				app.use(config.staticRoute, express.static(path));
+				app.use(staticRoute, express.static(path));
 			}
 		});
 		return app;

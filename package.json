@@ -29,7 +29,10 @@
 		"docs/tutorial.md"
 	],
 	"dependencies": {
-		"express": "~3.0.0",
+		"express": "~4.15.4",
+		"body-parser": "~1.17.2",
+		"compression": "~1.7.0",
+		"serve-favicon": "~2.4.3",
 		"creatartis-base": "~0.1.7",
 		"sermat": "~0.0.8"
 	},
