@@ -348,7 +348,7 @@ var Capataz = exports.Capataz = declare({
 			app.use(require('compression')());
 		}
 		app.use(favicon(config.serverFiles +'/favicon.ico'));
-		
+
 		var staticRoute = config.staticRoute;
 		app.get('/', function(req, res) { // Redirect the root to <staticRoute/index.html>.
 			res.redirect(staticRoute +'/index.html');
@@ -412,6 +412,15 @@ var Capataz = exports.Capataz = declare({
 
 			return partition.length < 1 ? false : Future.all(partition);
 		} /* Future.all() result is an array, hence always truthy. */ );
+	},
+
+	/** Adds a RequireJS module to the files being served. This is useful to encapsulate logic that
+	is common for both server and clients, that is to much to be included in the tasks' code. 
+	*/
+	add_module: function add_module(name, initFunction, dependencies) {
+		this.expressApp.get(this.config.staticRoute +'/'+ name +'.js', function (request, response) {
+			response.send('define('+ JSON.stringify(dependencies) +','+ args.initFunction +');');
+		});
 	}
 }); // declare Capataz.
 
