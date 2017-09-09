@@ -37,9 +37,7 @@
 The Capataz constructor builds Capataz servers which can schedule jobs and assign them to connecting
 browsers. It is based on a [ExpressJS](http://expressjs.com/) application.
 */
-var bodyParser = require('body-parser'),
-	favicon = require('serve-favicon');
-
+var bodyParser = require('body-parser');
 
 var Capataz = exports.Capataz = declare({
 	constructor: function Capataz(config) {
@@ -347,7 +345,6 @@ var Capataz = exports.Capataz = declare({
 		if (config.compression) {
 			app.use(require('compression')());
 		}
-		app.use(favicon(config.serverFiles +'/favicon.ico'));
 
 		var staticRoute = config.staticRoute;
 		app.get('/', function(req, res) { // Redirect the root to <staticRoute/index.html>.
@@ -415,9 +412,10 @@ var Capataz = exports.Capataz = declare({
 	},
 
 	/** Adds a RequireJS module to the files being served. This is useful to encapsulate logic that
-	is common for both server and clients, that is to much to be included in the tasks' code. 
+	is common for both server and clients, that is to much to be included in the tasks' code.
 	*/
 	add_module: function add_module(name, initFunction, dependencies) {
+		//TODO Check arguments.
 		this.expressApp.get(this.config.staticRoute +'/'+ name +'.js', function (request, response) {
 			response.send('define('+ JSON.stringify(dependencies) +','+ args.initFunction +');');
 		});
