@@ -3,9 +3,7 @@
 The Capataz constructor builds Capataz servers which can schedule jobs and assign them to connecting
 browsers. It is based on a [ExpressJS](http://expressjs.com/) application.
 */
-var bodyParser = require('body-parser'),
-	favicon = require('serve-favicon');
-
+var bodyParser = require('body-parser');
 
 var Capataz = exports.Capataz = declare({
 	constructor: function Capataz(config) {
@@ -313,7 +311,6 @@ var Capataz = exports.Capataz = declare({
 		if (config.compression) {
 			app.use(require('compression')());
 		}
-		app.use(favicon(config.serverFiles +'/favicon.ico'));
 
 		var staticRoute = config.staticRoute;
 		app.get('/', function(req, res) { // Redirect the root to <staticRoute/index.html>.
