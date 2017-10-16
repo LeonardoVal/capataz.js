@@ -293,7 +293,7 @@ var Capataz = exports.Capataz = declare({
 			this.statistics.add({key:"jobs_per_task"}, task.jobs.length);
 		} else {
 			this.logger.debug("There are no pending jobs yet.");
-			response.send(404, "There are no pending jobs yet. Please try again later.");
+			response.status(404).send("There are no pending jobs yet. Please try again later.");
 		}
 		return true;
 	},
@@ -305,7 +305,7 @@ var Capataz = exports.Capataz = declare({
 		var capataz = this,
 			postedFrom = request.connection.remoteAddress +'';
 		if (!request.body || !Array.isArray(request.body.jobs)) {
-			response.send(400, "Invalid post.");
+			response.status(400).send("Invalid post.");
 		} else {
 			response.send("Thank you.");
 			request.body.jobs.forEach(function (job) {
