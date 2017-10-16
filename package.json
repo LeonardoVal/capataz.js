@@ -5,7 +5,7 @@
 		"distributed computing",
 		"distributed algorithm"
 	],
-	"version": "0.1.7",
+	"version": "0.1.7-alpha",
 	"author": {
 		"name": "Leonardo Val",
 		"email": "leonardo.val@creatartis.com"
@@ -29,11 +29,11 @@
 		"docs/tutorial.md"
 	],
 	"dependencies": {
-		"express": "~4.15.4",
-		"body-parser": "~1.17.2",
-		"compression": "~1.7.0",
+		"express": "~4.16.2",
+		"body-parser": "~1.18.2",
+		"compression": "~1.7.1",
 		"creatartis-base": "~0.1.7",
-		"sermat": "~0.0.8"
+		"sermat": "~0.0.9"
 	},
 	"devDependencies": {
 		"source-map-support": "~0.4.0",
