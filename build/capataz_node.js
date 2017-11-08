@@ -79,8 +79,8 @@ var Capataz = exports.Capataz = declare({
 		/** + `maxTaskSize = 50` is the maximum amount of jobs that can be bundled per task.
 		*/
 			.number('maxTaskSize', { defaultValue: 50, coerce: true })
-		/** + `evaluationTimeGainFactor = 90%` is the gain factor used to adjust the
-		evaluation time average.
+		/** + `evaluationTimeGainFactor = 90%` is the gain factor used to adjust the evaluation
+		time average.
 		*/
 			.number('evaluationTimeGainFactor', { defaultValue: 0.9, coerce: true })
 		/** + `maxScheduled = 5000` is the maximum amount of scheduled pending jobs at any
@@ -99,10 +99,6 @@ var Capataz = exports.Capataz = declare({
 		Capataz will be served.
 		*/
 			.string('serverFiles', { defaultValue: path.dirname(module.filename) +'/static' })
-		/** + `customFiles = ''` is the path (or paths, separated by `'\n'`) from where custom
-		static files will be served.
-		*/
-			.string('customFiles', { defaultValue: '' })
 		/** + `routes = {}` is an object that may redefine the URLs of the Capataz verbs.
 		*/
 			.object('routes', { defaultValue: {} })
@@ -117,6 +113,11 @@ var Capataz = exports.Capataz = declare({
 		*/
 			.string('logFile', { defaultValue: Text.formatDate(new Date(), '"capataz-"yyyymmdd-hhnnss".log"') })
 		;
+		/** + `customFiles` specifies a path or paths of files or directories to be served. It can
+			be either a string (with path separated by '\n') or an array. Each path can be a
+			string or an object with properties `path` for the file path and `route` for the URL.
+		*/
+		this.config.customFiles = config.customFiles || [];
 		/** The rest of the constructor arguments set other server properties:
 		*/
 		initialize(this, config)
@@ -360,14 +361,71 @@ var Capataz = exports.Capataz = declare({
 				app.use(route, express.basicAuth(config.authentication.bind(this, route)));
 			});
 		}
-		app.use(staticRoute, express.static(config.serverFiles)); // Static files.
-		config.customFiles.split('\n').forEach(function (path) {
-			path = path.trim();
+		this.__configureAppFiles__(app);
+		return app;
+	},
+
+	/** A Capataz server must manage many files besides the tasks and the results of their
+	execution. These include the HTML, CSS and JS content for the clients page, but also
+	dependencies and data files for the tasks themselves.
+	*/
+	__configureAppFiles__: function __configureAppFiles__(app) {
+		var server = this,
+			config = this.config;
+		app = app || express();
+		app.use(config.staticRoute, express.static(config.serverFiles)); // Capataz own static files.
+		if (typeof config.customFiles === 'string') {
+			config.customFiles = config.customFiles.split('\n');
+		}
+		config.customFiles.forEach(function (file) {
+			if (typeof file ===  'string') {
+				file = { path: file };
+			}
+			path = file.path && file.path.trim();
 			if (path) {
-				app.use(staticRoute, express.static(path));
+				if (!filesystem.existsSync(path)) {
+					console.error("Custom files' path <"+ path +"> does not exist!");
+				} else {
+					var pathStat = filesystem.lstatSync(path);
+					if (pathStat.isDirectory()) {
+						server.__serveDirectory__(path, file.route, app);
+					} else if (pathStat.isFile()) {
+						server.__serveDirectory__(path, file.route, app);
+					}
+				}
 			}
 		});
-		return app;
+	},
+
+	/** Configures the express `app` to serve at `route` all files in `path`.
+	*/
+	__serveDirectory__: function __serveDirectory__(path, route, app) {
+		app = app || this.expressApp;
+		route = route || this.config.staticRoute;
+		app.use(route, express.static(path));
+	},
+
+	/** Configures the express `app` to serve at `route` the static file located in `path`.
+	*/
+	__serveFile__: function __serveFile__(path, route, app) {
+		app = app || this.expressApp;
+		route = route || this.config.staticRoute +'/'+ path.basename(path);
+		app.get(route, function (request, response) {
+			response.sendFile(path, options);
+		});
+	},
+
+	/** Adds a RequireJS module to the files being served. This is useful to encapsulate logic that
+	is common for both server and clients, that is too much to be included in the tasks' code.
+	*/
+	__serveRequireModule__: function __serveRequireModule__(initFunction, name, dependencies, route, app) {
+		app = app || this.expressApp;
+		route = route || this.config.staticRoute +'/'+ name +'.js';
+		name = name || initFunction.name;
+		dependencies = dependencies || [];
+		app.get(route, function (request, response) {
+			response.send('define('+ JSON.stringify(dependencies) +','+ initFunction +');');
+		});
 	},
 
 	/** `Capataz.run` is a shortcut to quickly configure and start a Capataz server. The `config`
@@ -409,16 +467,6 @@ var Capataz = exports.Capataz = declare({
 
 			return partition.length < 1 ? false : Future.all(partition);
 		} /* Future.all() result is an array, hence always truthy. */ );
-	},
-
-	/** Adds a RequireJS module to the files being served. This is useful to encapsulate logic that
-	is common for both server and clients, that is to much to be included in the tasks' code.
-	*/
-	add_module: function add_module(name, initFunction, dependencies) {
-		//TODO Check arguments.
-		this.expressApp.get(this.config.staticRoute +'/'+ name +'.js', function (request, response) {
-			response.send('define('+ JSON.stringify(dependencies) +','+ args.initFunction +');');
-		});
 	}
 }); // declare Capataz.
 
