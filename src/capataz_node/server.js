@@ -356,7 +356,7 @@ var Capataz = exports.Capataz = declare({
 					if (pathStat.isDirectory()) {
 						server.__serveDirectory__(path, file.route, app);
 					} else if (pathStat.isFile()) {
-						server.__serveDirectory__(path, file.route, app);
+						server.__serveFile__(path, file.route, app);
 					}
 				}
 			}

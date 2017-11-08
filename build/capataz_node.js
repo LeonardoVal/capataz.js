@@ -390,7 +390,7 @@ var Capataz = exports.Capataz = declare({
 					if (pathStat.isDirectory()) {
 						server.__serveDirectory__(path, file.route, app);
 					} else if (pathStat.isFile()) {
-						server.__serveDirectory__(path, file.route, app);
+						server.__serveFile__(path, file.route, app);
 					}
 				}
 			}
@@ -420,8 +420,8 @@ var Capataz = exports.Capataz = declare({
 	*/
 	__serveRequireModule__: function __serveRequireModule__(initFunction, name, dependencies, route, app) {
 		app = app || this.expressApp;
-		route = route || this.config.staticRoute +'/'+ name +'.js';
 		name = name || initFunction.name;
+		route = route || this.config.staticRoute +'/'+ name +'.js';
 		dependencies = dependencies || [];
 		app.get(route, function (request, response) {
 			response.send('define('+ JSON.stringify(dependencies) +','+ initFunction +');');
