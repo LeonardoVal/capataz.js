@@ -347,37 +347,39 @@ var Capataz = exports.Capataz = declare({
 			if (typeof file ===  'string') {
 				file = { path: file };
 			}
-			path = file.path && file.path.trim();
-			if (path) {
-				if (!filesystem.existsSync(path)) {
-					console.error("Custom files' path <"+ path +"> does not exist!");
+			if (file.path) {
+				var p = path.resolve(file.path.trim());
+				if (!filesystem.existsSync(p)) {
+					console.error("Custom files' path <"+ p +"> does not exist!");
 				} else {
-					var pathStat = filesystem.lstatSync(path);
+					var pathStat = filesystem.lstatSync(p);
 					if (pathStat.isDirectory()) {
-						server.__serveDirectory__(path, file.route, app);
+						server.__serveDirectory__(p, file.route, app);
 					} else if (pathStat.isFile()) {
-						server.__serveFile__(path, file.route, app);
+						server.__serveFile__(p, file.route, app);
 					}
 				}
+			} else if (file.module) {
+				server.__serveNodeModule__(file.module, route, app);
 			}
 		});
 	},
 
 	/** Configures the express `app` to serve at `route` all files in `path`.
 	*/
-	__serveDirectory__: function __serveDirectory__(path, route, app) {
+	__serveDirectory__: function __serveDirectory__(dirPath, route, app) {
 		app = app || this.expressApp;
 		route = route || this.config.staticRoute;
-		app.use(route, express.static(path));
+		app.use(route, express.static(dirPath));
 	},
 
 	/** Configures the express `app` to serve at `route` the static file located in `path`.
 	*/
-	__serveFile__: function __serveFile__(path, route, app) {
+	__serveFile__: function __serveFile__(filePath, route, app) {
 		app = app || this.expressApp;
-		route = route || this.config.staticRoute +'/'+ path.basename(path);
+		route = route || this.config.staticRoute +'/'+ path.basename(filePath);
 		app.get(route, function (request, response) {
-			response.sendFile(path, options);
+			response.sendFile(filePath, { /* options */ });
 		});
 	},
 
@@ -385,13 +387,41 @@ var Capataz = exports.Capataz = declare({
 	is common for both server and clients, that is too much to be included in the tasks' code.
 	*/
 	__serveRequireModule__: function __serveRequireModule__(initFunction, name, dependencies, route, app) {
-		app = app || this.expressApp;
 		name = name || initFunction.name;
+		dependencies = dependencies || initFunction.dependencies || [];
+		app = app || this.expressApp;
 		route = route || this.config.staticRoute +'/'+ name +'.js';
-		dependencies = dependencies || [];
 		app.get(route, function (request, response) {
 			response.send('define('+ JSON.stringify(dependencies) +','+ initFunction +');');
 		});
+	},
+
+	/** Adds a NodeJS module to the files being served. For this to work the code of the module has
+	to be isomorphic, i.e. work in both on server (NodeJS) and client (browser and maybe
+	webworker). The module is loaded (via `require`) to ensure it is available. Is importing the
+	module in the server must be avoided, use `__serveFile__` instead.
+	*/
+	__serveNodeModule__: function __serveNodeModule__(_module, route, app) {
+		var p, n;
+		if (typeof _module === 'string') {
+			p = require.resolve(_module);
+			n = _module;
+		} else {
+			if (!(_module instanceof module.constructor)) { // Where is `Module` in NodeJS?
+				_module = iterable(require.cache).filterApply(function (id, m) {
+						return m.exports === _module;
+					}, function (id, m) {
+						return m;
+					}).head(null);
+				raiseIf(!_module, 'Given module object was not found in require.cache!');
+			}
+			p = _module.filename;
+			var moduleNameTest = /node_modules(?:\/@.*?)?\/(.*?)\//.exec(p);
+			n = _module.exports.__package__ || (moduleNameTest && moduleNameTest[1]) ||
+				path.basename(p, '.js');
+		}
+		route = route || this.config.staticRoute +'/'+ n +'.js';
+		return this.__serveFile__(p, route, app);
 	},
 
 	/** `Capataz.run` is a shortcut to quickly configure and start a Capataz server. The `config`

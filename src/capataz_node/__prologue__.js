@@ -23,6 +23,7 @@
 	*/
 	var copy = base.copy,
 		declare = base.declare,
+		raiseIf = base.raiseIf,
 		initialize = base.initialize,
 		Text = base.Text,
 		iterable = base.iterable,
