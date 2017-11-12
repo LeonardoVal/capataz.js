@@ -346,6 +346,8 @@ var Capataz = exports.Capataz = declare({
 		config.customFiles.forEach(function (file) {
 			if (typeof file ===  'string') {
 				file = { path: file };
+			} else if (file instanceof module.constructor) {
+				file = { module: file };
 			}
 			if (file.path) {
 				var p = path.resolve(file.path.trim());
@@ -360,9 +362,10 @@ var Capataz = exports.Capataz = declare({
 					}
 				}
 			} else if (file.module) {
-				server.__serveNodeModule__(file.module, route, app);
+				server.__serveNodeModule__(file.module, file.route, app);
 			}
 		});
+		return app;
 	},
 
 	/** Configures the express `app` to serve at `route` all files in `path`.
@@ -371,6 +374,7 @@ var Capataz = exports.Capataz = declare({
 		app = app || this.expressApp;
 		route = route || this.config.staticRoute;
 		app.use(route, express.static(dirPath));
+		return this;
 	},
 
 	/** Configures the express `app` to serve at `route` the static file located in `path`.
@@ -381,6 +385,7 @@ var Capataz = exports.Capataz = declare({
 		app.get(route, function (request, response) {
 			response.sendFile(filePath, { /* options */ });
 		});
+		return this;
 	},
 
 	/** Adds a RequireJS module to the files being served. This is useful to encapsulate logic that
@@ -394,6 +399,7 @@ var Capataz = exports.Capataz = declare({
 		app.get(route, function (request, response) {
 			response.send('define('+ JSON.stringify(dependencies) +','+ initFunction +');');
 		});
+		return this;
 	},
 
 	/** Adds a NodeJS module to the files being served. For this to work the code of the module has
@@ -402,7 +408,8 @@ var Capataz = exports.Capataz = declare({
 	module in the server must be avoided, use `__serveFile__` instead.
 	*/
 	__serveNodeModule__: function __serveNodeModule__(_module, route, app) {
-		var p, n;
+		var server = this,
+			p, n;
 		if (typeof _module === 'string') {
 			p = require.resolve(_module);
 			n = _module;
@@ -421,7 +428,8 @@ var Capataz = exports.Capataz = declare({
 				path.basename(p, '.js');
 		}
 		route = route || this.config.staticRoute +'/'+ n +'.js';
-		return this.__serveFile__(p, route, app);
+		this.__serveFile__(p, route, app);
+		return this;
 	},
 
 	/** `Capataz.run` is a shortcut to quickly configure and start a Capataz server. The `config`
