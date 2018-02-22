@@ -16,7 +16,10 @@ var Store = exports.Store = declare({
 			/** + `statistics` is a `base.Statistics` object that may be used to register data about
 			the store.
 			*/
-			.object('statistics', { ignore: true });
+			.object('statistics', { ignore: true })
+			/** + `random` is a `Randomness` instance that can be used to break determinism.
+			*/
+			.object('random', { defaultValue: base.Randomness.DEFAULT });
 		this.__count__ = 0;
 	},
 	
@@ -79,16 +82,12 @@ var Store = exports.Store = declare({
 	*/
 	__take__: function __take__(obj, n, deleteTaken) {
 		var selected = [];
-		for (var id in obj) if (obj.hasOwnProperty(id)) {
-			if (--n < 0) {
-				break;
-			}
-			selected.push([id, obj[id]]);
+		return this.random.choices(n, obj).map(function (p) {
 			if (deleteTaken) {
-				delete obj[id];
-			}			
-		}
-		return selected;
+				delete obj[p[0]];
+			}
+			return p;
+		});
 	}
 }); // declare Store
 
