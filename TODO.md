@@ -11,7 +11,7 @@
 
 ## Client
 
-+ Random delay for `Drudger` initialization.
++ Random delay for `Drudger` initialization, to prevent server overload.
 + Better control with brief console commands (i.e. `APP` methods).
 + Worker count report and control in the web page.
 
@@ -20,3 +20,4 @@
 + Statistic report page with autorefresh.
 + Test using of [GPU.js](http://gpu.rocks/).
 + Test using WebDAV repositories of data.
++ Job data attached to job's future. E.g. in `scheduleAll` the callback cannot use the data used to generate the job in the iterator.
