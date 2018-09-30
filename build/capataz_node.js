@@ -510,11 +510,9 @@ var Capataz = exports.Capataz = declare({
 }); // declare Capataz.
 
 
-/** # Stores
+/** # Store
 
 Job stores are components dedicated to store the scheduled jobs and (possibly) its results.
-
-## Base store ######################################################################################
 */
 var Store = exports.Store = declare({
 	/** All constructors of job stores can have the following parameters:
@@ -603,7 +601,7 @@ var Store = exports.Store = declare({
 	}
 }); // declare Store
 
-/** ## Memory store ################################################################################
+/* # Memory store
 
 This is the default store, which keeps all jobs in memory.
 */
@@ -710,7 +708,7 @@ var MemoryStore = exports.MemoryStore = declare(Store, {
 	}
 }); // declare MemoryStore
 
-/** ## File store ##################################################################################
+/** # File store
 
 This is a job store that uses the file system to decrease the amount of memory used.
 */
