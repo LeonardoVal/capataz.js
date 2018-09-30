@@ -4,7 +4,8 @@ var path = require('path');
 
 module.exports = function(grunt) {
 	var SOURCE_FILES = ['__prologue__', 
-			'server', 'stores', 
+			'server', 
+			'stores/Store', 'stores/MemoryStore', 'stores/FileStore', 
 		'__epilogue__'].map(function (path) {
 			return 'src/capataz_node/'+ path +'.js';
 		});
