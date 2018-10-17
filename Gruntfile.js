@@ -75,17 +75,6 @@ module.exports = function(grunt) {
 				},
 				src: ['tests/specs/*.test.js']
 			}
-		},
-		docker: { //////////////////////////////////////////////////////////////////////////////////
-			build: {
-				src: ["src/**/*.js", "tests/**/*.js", "README.md", "docs/**/*.md"],
-				dest: "docs/docker",
-				options: {
-					colourScheme: 'borland',
-					ignoreHidden: true,
-					exclude: 'src/**/__*__.js'
-				}
-			}
 		}
 	});
 
@@ -94,7 +83,6 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-clean');
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
-	grunt.loadNpmTasks('grunt-docker');
 	grunt.loadNpmTasks('grunt-contrib-jshint');
 	grunt.loadNpmTasks('grunt-mocha-test');
 
@@ -102,6 +90,6 @@ module.exports = function(grunt) {
 	grunt.registerTask('compile', ['clean:build', 'copy:build', 'concat:build', 'jshint:build', 
 		'uglify']);
 	grunt.registerTask('test', ['mochaTest:test']);
-	grunt.registerTask('build', ['compile', 'test', 'docker']);
+	grunt.registerTask('build', ['compile', 'test']);
 	grunt.registerTask('default', ['build']);
 };

@@ -29,25 +29,24 @@
 		"docs/tutorial.md"
 	],
 	"dependencies": {
-		"express": "~4.16.2",
-		"body-parser": "~1.18.2",
-		"compression": "~1.7.1",
-		"creatartis-base": "~0.1.7",
+		"express": "~4.16.4",
+		"body-parser": "~1.18.3",
+		"compression": "~1.7.3",
+		"creatartis-base": "~0.1.8",
 		"sermat": "~0.0.9"
 	},
 	"devDependencies": {
-		"source-map-support": "~0.4.0",
-		"requirejs": "~2.2.0",
-		"grunt": "~1.0.0",
-		"grunt-contrib-clean": "~1.0.0",
+		"source-map-support": "~0.5.9",
+		"requirejs": "~2.3.6",
+		"grunt": "~1.0.3",
+		"grunt-contrib-clean": "~2.0.0",
 		"grunt-contrib-copy": "~1.0.0",
-		"grunt-contrib-concat": "~1.0.0",
-		"grunt-contrib-uglify": "~1.0.0",
-		"grunt-docker": "~0.0.11",
-		"grunt-contrib-jshint": "~1.0.0",
-		"grunt-mocha-test": "~0.12.7",
-		"mocha": "~2.5.2",
-		"chai": "~3.5.0"
+		"grunt-contrib-concat": "~1.0.1",
+		"grunt-contrib-uglify": "~4.0.0",
+		"grunt-contrib-jshint": "~2.0.0",
+		"grunt-mocha-test": "~0.13.3",
+		"mocha": "~5.2.0",
+		"chai": "~4.2.0"
 	},
 	"scripts": {
 		"partition_problem1": "grunt & node tests/partition_problem1.js",
