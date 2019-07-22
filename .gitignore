@@ -8,6 +8,8 @@ bower_components/
 
 # Generated files
 docs/docker/
+docs/jsdoc/
+docs/jsdoc-conf.json
 tools/
 tests/logs/
 npm-debug.log
