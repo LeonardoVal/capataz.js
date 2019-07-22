@@ -29,24 +29,25 @@
 		"docs/tutorial.md"
 	],
 	"dependencies": {
-		"express": "~4.16.4",
-		"body-parser": "~1.18.3",
-		"compression": "~1.7.3",
+		"express": "~4.17.1",
+		"body-parser": "~1.19.0",
+		"compression": "~1.7.4",
 		"creatartis-base": "~0.1.8",
 		"sermat": "~0.0.9"
 	},
 	"devDependencies": {
-		"source-map-support": "~0.5.9",
+		"source-map-support": "~0.5.12",
 		"requirejs": "~2.3.6",
-		"grunt": "~1.0.3",
+		"grunt": "~1.0.4",
 		"grunt-contrib-clean": "~2.0.0",
 		"grunt-contrib-copy": "~1.0.0",
 		"grunt-contrib-concat": "~1.0.1",
-		"grunt-contrib-uglify": "~4.0.0",
-		"grunt-contrib-jshint": "~2.0.0",
+		"grunt-contrib-uglify": "~4.0.1",
+		"grunt-contrib-jshint": "~2.1.0",
 		"grunt-mocha-test": "~0.13.3",
-		"mocha": "~5.2.0",
-		"chai": "~4.2.0"
+		"mocha": "~6.2.0",
+		"chai": "~4.2.0",
+		"lodash": "~4.17.15"
 	},
 	"scripts": {
 		"partition_problem1": "grunt & node tests/partition_problem1.js",
