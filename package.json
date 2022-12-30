@@ -45,7 +45,7 @@
 		"grunt-contrib-uglify": "~4.0.1",
 		"grunt-contrib-jshint": "~2.1.0",
 		"grunt-mocha-test": "~0.13.3",
-		"mocha": "~6.2.0",
+		"mocha": "~10.2.0",
 		"chai": "~4.2.0",
 		"lodash": "~4.17.15"
 	},
